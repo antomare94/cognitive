@@ -1,0 +1,1 @@
+/home/mivia/prog_ws/devel/.private/jetbot_description/share/jetbot_description/cmake/jetbot_descriptionConfig-version.cmake

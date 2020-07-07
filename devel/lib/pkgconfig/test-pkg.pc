@@ -1,0 +1,1 @@
+/home/mivia/prog_ws/devel/.private/test-pkg/lib/pkgconfig/test-pkg.pc

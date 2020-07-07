@@ -1,0 +1,8 @@
+prefix=/home/mivia/prog_ws/install
+
+Name: jetbot_description
+Description: Description of jetbot_description
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/mivia/prog_ws/install/lib 
+Requires: 

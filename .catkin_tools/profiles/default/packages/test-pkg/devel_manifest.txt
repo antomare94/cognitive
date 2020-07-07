@@ -1,0 +1,4 @@
+test-pkg
+/home/mivia/prog_ws/devel/.private/test-pkg/lib/pkgconfig/test-pkg.pc /home/mivia/prog_ws/devel/lib/pkgconfig/test-pkg.pc
+/home/mivia/prog_ws/devel/.private/test-pkg/share/test-pkg/cmake/test-pkgConfig.cmake /home/mivia/prog_ws/devel/share/test-pkg/cmake/test-pkgConfig.cmake
+/home/mivia/prog_ws/devel/.private/test-pkg/share/test-pkg/cmake/test-pkgConfig-version.cmake /home/mivia/prog_ws/devel/share/test-pkg/cmake/test-pkgConfig-version.cmake
