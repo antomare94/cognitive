@@ -1,8 +1,0 @@
-prefix=/home/mivia/prog_ws/devel/.private/cogrob_mivia
-
-Name: cogrob_mivia
-Description: Description of cogrob_mivia
-Version: 0.0.0
-Cflags: 
-Libs: -L/home/mivia/prog_ws/devel/.private/cogrob_mivia/lib 
-Requires: 

@@ -1,1 +1,0 @@
-/home/mivia/prog_ws/devel/.private/jetbot_control/share/jetbot_control/cmake/jetbot_controlConfig.cmake

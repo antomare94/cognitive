@@ -1,1 +1,0 @@
-/home/mivia/prog_ws/devel/.private/spawn_robot_tools_pkg/lib/python2.7/dist-packages/spawn_robot_tools_pkg/__init__.py

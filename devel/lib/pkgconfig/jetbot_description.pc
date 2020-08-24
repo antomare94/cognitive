@@ -1,1 +1,0 @@
-/home/mivia/prog_ws/devel/.private/jetbot_description/lib/pkgconfig/jetbot_description.pc

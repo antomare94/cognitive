@@ -1,1 +1,0 @@
-/home/mivia/prog_ws/devel/.private/cogrob_mivia/share/cogrob_mivia/cmake/cogrob_miviaConfig.cmake
