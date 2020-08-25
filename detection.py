@@ -5,32 +5,36 @@ import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 import numpy as np
-
+from datetime import datetime
+from imutils.video import FPS
 
 
 tensorflowNet = cv2.dnn.readNetFromTensorflow('/home/mivia/progetto_ws/src/test-pkg/node/output_inference_graph_v1/frozen_inference_graph.pb', '/home/mivia/progetto_ws/src/test-pkg/node/graph.pbtxt')
 
 bridge = CvBridge()
 
-tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'GOTURN', 'MOSSE', 'CSRT']
+def initialize_tracker(i):
 
-tracker_type = tracker_types[0]
+    tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'GOTURN', 'MOSSE', 'CSRT']
+
+    tracker_type = tracker_types[i]
 
 
-if tracker_type == 'BOOSTING':
-    tracker = cv2.TrackerBoosting_create()
-if tracker_type == 'MIL':
-    tracker = cv2.TrackerMIL_create()
-if tracker_type == 'KCF':
-    tracker = cv2.TrackerKCF_create()
-if tracker_type == 'TLD':
-    tracker = cv2.TrackerTLD_create()
-if tracker_type == 'MEDIANFLOW':
-    tracker = cv2.TrackerMedianFlow_create()
-if tracker_type == 'CSRT':
-    tracker = cv2.TrackerCSRT_create()
-if tracker_type == 'MOSSE':
-    tracker = cv2.TrackerMOSSE_create()
+    if tracker_type == 'BOOSTING':
+        tracker = cv2.TrackerBoosting_create()
+    if tracker_type == 'MIL':
+        tracker = cv2.TrackerMIL_create()
+    if tracker_type == 'KCF':
+        tracker = cv2.TrackerKCF_create()
+    if tracker_type == 'TLD':
+        tracker = cv2.TrackerTLD_create()
+    if tracker_type == 'MEDIANFLOW':
+        tracker = cv2.TrackerMedianFlow_create()
+    if tracker_type == 'CSRT':
+        tracker = cv2.TrackerCSRT_create()
+    if tracker_type == 'MOSSE':
+        tracker = cv2.TrackerMOSSE_create()
+    return tracker
 
 det = False
 fps = 0
@@ -39,14 +43,17 @@ x1_ball = 0
 y1_ball = 0
 x2_ball = 0
 y2_ball = 0
+tracker = None
 
 def callback(data):
 
-    global det,fps,init_track,x1_ball,y1_ball,x2_ball,y2_ball
+    global det,fps,init_track,x1_ball,y1_ball,x2_ball,y2_ball,tracker
 
     #print("image_callback")
     cv_image = bridge.imgmsg_to_cv2(data, "passthrough")
     rows, cols, channels = cv_image.shape
+
+    #startTime = datetime.now()
 
     if not det:
 
@@ -75,12 +82,14 @@ def callback(data):
 
     else:
         if init_track:
+            tracker = initialize_tracker(7) #oppure 2
             bbox = (x1_ball,y1_ball,abs(x2_ball-x1_ball),abs(y2_ball-y1_ball))
             ok = tracker.init(cv_image, bbox)
             if ok:
                 init_track = False
             else:
                 det = False
+                print("not ok")
         else:
             ok, bbox = tracker.update(cv_image)
             if ok:
@@ -92,6 +101,14 @@ def callback(data):
         #print(fps)
         if fps > 10:
             det = False
+            init_track = True
+            fps = 0
+    #print(datetime.now()-startTime)
+
+    fps_val.update()
+    fps_val.stop()
+    print("[INFO] elasped time: {:.2f}".format(fps_val.elapsed()))
+    print("[INFO] approx. FPS: {:.2f}".format(fps_val.fps()))
 
     cv2.imshow("img",cv_image)
     cv2.waitKey(1)
@@ -107,4 +124,5 @@ def listener():
     rospy.spin()
 
 if __name__ == '__main__':
+    fps_val = FPS().start()
     listener()
