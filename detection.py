@@ -49,11 +49,8 @@ def callback(data):
 
     global det,fps,init_track,x1_ball,y1_ball,x2_ball,y2_ball,tracker
 
-    #print("image_callback")
     cv_image = bridge.imgmsg_to_cv2(data, "passthrough")
     rows, cols, channels = cv_image.shape
-
-    #startTime = datetime.now()
 
     if not det:
 
@@ -89,21 +86,20 @@ def callback(data):
                 init_track = False
             else:
                 det = False
-                print("not ok")
         else:
             ok, bbox = tracker.update(cv_image)
             if ok:
                 p1 = (int(bbox[0]), int(bbox[1]))
                 p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
                 cv2.rectangle(cv_image, p1, p2, (255,0,0), 2, 1)
+                punto_palla = (int(bbox[0] + bbox[2]//2), int(bbox[1] + bbox[3]))
+                #cv2.circle(cv_image,punto_palla,4,(0,0,255))
                 print("tracking")
         fps += 1
-        #print(fps)
-        if fps > 10:
+        if fps > 30:
             det = False
             init_track = True
             fps = 0
-    #print(datetime.now()-startTime)
 
     fps_val.update()
     fps_val.stop()
