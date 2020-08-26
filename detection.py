@@ -50,10 +50,13 @@ x2_ball = 0
 y2_ball = 0
 tracker = None
 
+previous_image = None
+image = np.zeros((2, 2))  # Blank image for initialization
+
 semaphore = True  # Semaphore to limit when the callback function is called
 
 def callback_with_threading(data):
-    global semaphore
+    global semaphore, image
 
     if semaphore:
         semaphore = False
@@ -62,9 +65,12 @@ def callback_with_threading(data):
     else:
         print('Image still processing - new input ignored')
 
+    cv2.imshow("img", image)
+    cv2.waitKey(1)
+
 def callback(data):
 
-    global det, fps, init_track, x1_ball, y1_ball, x2_ball, y2_ball, tracker, semaphore
+    global det, fps, init_track, x1_ball, y1_ball, x2_ball, y2_ball, tracker, semaphore, previous_image, image
 
     cv_image = bridge.imgmsg_to_cv2(data, "passthrough")
     rows, cols, channels = cv_image.shape
@@ -123,10 +129,11 @@ def callback(data):
     print("[INFO] elasped time: {:.2f}".format(fps_val.elapsed()))
     print("[INFO] approx. FPS: {:.2f}".format(fps_val.fps()))
 
-    cv2.imshow("img",cv_image)
-    cv2.waitKey(1)
+    previous_image = image
+    image = cv_image
 
     semaphore = True
+
     
 def listener():
 
