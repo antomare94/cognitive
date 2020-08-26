@@ -23,12 +23,14 @@ def callback(data):
 
     x_ball,y_ball = data.data
 
-    #print(x_ball)
-    #print(y_ball)
+    # print(x_ball)
+    # print(y_ball)
+
+    twist = Twist()
 
     if(x_ball == 0 and y_ball == 0):
-        #non fa la det della palla
-        twist = Twist()
+        # No ball detection
+        
         twist.linear.x = 0.0; twist.linear.y = 0.0; twist.linear.z = 0.0
 
         target_angular_vel = 2

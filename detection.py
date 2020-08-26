@@ -2,14 +2,19 @@
 import rospy
 from std_msgs.msg import String, Int16MultiArray
 import cv2 
+import os
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 import numpy as np
 from datetime import datetime
 from imutils.video import FPS
+import threading
 
+script_path = os.path.dirname(os.path.realpath(__file__))
+frozen_inference_graph_path = os.path.join(script_path, 'output_inference_graph_v1/frozen_inference_graph.pb')
+graph_path = os.path.join(script_path, 'graph.pbtxt')
 
-tensorflowNet = cv2.dnn.readNetFromTensorflow('/home/mivia/progetto_ws/src/test-pkg/node/output_inference_graph_v1/frozen_inference_graph.pb', '/home/mivia/progetto_ws/src/test-pkg/node/graph.pbtxt')
+tensorflowNet = cv2.dnn.readNetFromTensorflow(frozen_inference_graph_path, graph_path)
 
 bridge = CvBridge()
 
@@ -45,16 +50,48 @@ x2_ball = 0
 y2_ball = 0
 tracker = None
 
+arr_cords_ball = [0,0]
+
+previous_image = None
+image = np.zeros((2, 2))  # Blank image for initialization
+
+semaphore = True  # Semaphore to limit when the callback function is called
+
+def callback_with_threading(data):
+    global semaphore, image, arr_cords_ball
+
+    if semaphore:
+        semaphore = False
+        thread = threading.Thread(target=callback, args=(data,))
+        thread.start()
+    else:
+        print('PREVIOUS PROCESSING STEP UNFINISHED - NEW INPUT IGNORED')
+
+    print('[INFO] Ball detected position: ' + str(arr_cords_ball))
+    print('[NOTE] If equal to [0, 0] - no ball is detected')
+    pub.publish(Int16MultiArray(data=arr_cords_ball))
+
+    print('----------------------------------------')
+
+    cv2.imshow("img", image)
+    cv2.waitKey(1)
+
 def callback(data):
 
-    global det,fps,init_track,x1_ball,y1_ball,x2_ball,y2_ball,tracker
+    print('IMAGE PROCESSING BEGINS')
+
+    global det, fps, init_track, x1_ball, y1_ball, x2_ball, y2_ball, tracker, semaphore, previous_image, image, arr_cords_ball
 
     cv_image = bridge.imgmsg_to_cv2(data, "passthrough")
     rows, cols, channels = cv_image.shape
 
-    arr_cords_ball = [0,0]
+    nn_ball_detected = tracking_ball_detected = False
 
     if not det:
+
+        print("[INFO] Detection type: Neural Network")
+
+        nn_ball_detected = False
 
         tensorflowNet.setInput(cv2.dnn.blobFromImage(cv_image, size=(360, 640), swapRB=True, crop=False))
 
@@ -67,53 +104,74 @@ def callback(data):
             score = float(detection[2])
             if score > 0.5:
                 #print(detection[1])
-                x1 = detection[3] * cols
-                y1 = detection[4] * rows
-                x2 = detection[5] * cols
-                y2 = detection[6] * rows
+                x1 = int(detection[3] * cols)
+                y1 = int(detection[4] * rows)
+                x2 = int(detection[5] * cols)
+                y2 = int(detection[6] * rows)
                 if detection[1] == 1.0:
                     det = True
-                    x1_ball, y1_ball,x2_ball,y2_ball = x1,y1,x2,y2
-                    print("detect ball")
+                    x1_ball, y1_ball, x2_ball, y2_ball = x1, y1, x2, y2
+                    nn_ball_detected = True
         
                 #draw a red rectangle around detected objects
-                cv2.rectangle(cv_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), thickness=2)
+                cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0, 0, 255), thickness=2)
 
     else:
+
+        print("[INFO] Detection type: Tracking")
+
+        tracking_ball_detected = False
+
         if init_track:
             tracker = initialize_tracker(7) #oppure 2
             bbox = (x1_ball,y1_ball,abs(x2_ball-x1_ball),abs(y2_ball-y1_ball))
             ok = tracker.init(cv_image, bbox)
+
             if ok:
                 init_track = False
+                tracking_ball_detected = True
+
             else:
                 det = False
+
         else:
             ok, bbox = tracker.update(cv_image)
+
             if ok:
-                p1 = (int(bbox[0]), int(bbox[1]))
-                p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-                cv2.rectangle(cv_image, p1, p2, (255,0,0), 2, 1)
-                arr_cords_ball[0] = int(bbox[0] + bbox[2]//2)
-                arr_cords_ball[1] = int(bbox[1] + bbox[3])
-                #print(punto_palla)
-                #cv2.circle(cv_image,punto_palla,4,(0,0,255))
-                print("tracking")
+                x1_ball = int(bbox[0])
+                y1_ball = int(bbox[1])
+                x2_ball = int(bbox[0] + bbox[2])
+                y2_ball = int(bbox[1] + bbox[3])
+                tracking_ball_detected = True
+        
+        if tracking_ball_detected:
+            p1 = (x1_ball, y1_ball)
+            p2 = (x2_ball, y2_ball)
+            #draw a blue rectangle around the ball
+            cv2.rectangle(cv_image, p1, p2, (255,0,0), 2, 1)
+
         fps += 1
         if fps > 30:
             det = False
             init_track = True
             fps = 0
 
-    pub.publish(Int16MultiArray(data=arr_cords_ball))
-    
+    if nn_ball_detected or tracking_ball_detected:
+        arr_cords_ball[0] = int((x1_ball+x2_ball) / 2)
+        arr_cords_ball[1] = y2_ball
+    else:
+        arr_cords_ball = [0, 0]
+
+    previous_image = image
+    image = cv_image
+
     fps_val.update()
     fps_val.stop()
-    print("[INFO] elasped time: {:.2f}".format(fps_val.elapsed()))
-    print("[INFO] approx. FPS: {:.2f}".format(fps_val.fps()))
-    
-    cv2.imshow("img",cv_image)
-    cv2.waitKey(1)
+    print("[INFO] Elasped time: {:.2f}".format(fps_val.elapsed()))
+    print("[INFO] Approx. FPS: {:.2f}".format(fps_val.fps()))
+
+    semaphore = True  # Return the semaphore at the end of the thread
+
     
     
 def listener():
@@ -121,7 +179,7 @@ def listener():
 
     rospy.init_node('node_detection')
 
-    rospy.Subscriber("/robot1/camera1/image_raw", Image, callback)
+    rospy.Subscriber("/robot1/camera1/image_raw", Image, callback_with_threading)
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
