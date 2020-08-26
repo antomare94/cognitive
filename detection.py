@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String, Int16MultiArray
 import cv2 
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
@@ -52,6 +52,8 @@ def callback(data):
     cv_image = bridge.imgmsg_to_cv2(data, "passthrough")
     rows, cols, channels = cv_image.shape
 
+    arr_cords_ball = [0,0]
+
     if not det:
 
         tensorflowNet.setInput(cv2.dnn.blobFromImage(cv_image, size=(360, 640), swapRB=True, crop=False))
@@ -92,7 +94,9 @@ def callback(data):
                 p1 = (int(bbox[0]), int(bbox[1]))
                 p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
                 cv2.rectangle(cv_image, p1, p2, (255,0,0), 2, 1)
-                punto_palla = (int(bbox[0] + bbox[2]//2), int(bbox[1] + bbox[3]))
+                arr_cords_ball[0] = int(bbox[0] + bbox[2]//2)
+                arr_cords_ball[1] = int(bbox[1] + bbox[3])
+                #print(punto_palla)
                 #cv2.circle(cv_image,punto_palla,4,(0,0,255))
                 print("tracking")
         fps += 1
@@ -101,18 +105,21 @@ def callback(data):
             init_track = True
             fps = 0
 
+    pub.publish(Int16MultiArray(data=arr_cords_ball))
+    
     fps_val.update()
     fps_val.stop()
     print("[INFO] elasped time: {:.2f}".format(fps_val.elapsed()))
     print("[INFO] approx. FPS: {:.2f}".format(fps_val.fps()))
-
+    
     cv2.imshow("img",cv_image)
     cv2.waitKey(1)
+    
     
 def listener():
 
 
-    rospy.init_node('test_node')
+    rospy.init_node('node_detection')
 
     rospy.Subscriber("/robot1/camera1/image_raw", Image, callback)
 
@@ -121,4 +128,7 @@ def listener():
 
 if __name__ == '__main__':
     fps_val = FPS().start()
+
+    pub = rospy.Publisher('Ball_Info', Int16MultiArray, queue_size=1)
+
     listener()
