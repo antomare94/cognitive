@@ -2,14 +2,19 @@
 import rospy
 from std_msgs.msg import String
 import cv2 
+import os
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 import numpy as np
 from datetime import datetime
 from imutils.video import FPS
+import threading
 
+script_path = os.path.dirname(os.path.realpath(__file__))
+frozen_inference_graph_path = os.path.join(script_path, 'output_inference_graph_v1/frozen_inference_graph.pb')
+graph_path = os.path.join(script_path, 'graph.pbtxt')
 
-tensorflowNet = cv2.dnn.readNetFromTensorflow('/home/mivia/progetto_ws/src/test-pkg/node/output_inference_graph_v1/frozen_inference_graph.pb', '/home/mivia/progetto_ws/src/test-pkg/node/graph.pbtxt')
+tensorflowNet = cv2.dnn.readNetFromTensorflow(frozen_inference_graph_path, graph_path)
 
 bridge = CvBridge()
 
@@ -45,9 +50,21 @@ x2_ball = 0
 y2_ball = 0
 tracker = None
 
+semaphore = True  # Semaphore to limit when the callback function is called
+
+def callback_with_threading(data):
+    global semaphore
+
+    if semaphore:
+        semaphore = False
+        thread = threading.Thread(target=callback, args=(data,))
+        thread.start()
+    else:
+        print('Image still processing - new input ignored')
+
 def callback(data):
 
-    global det,fps,init_track,x1_ball,y1_ball,x2_ball,y2_ball,tracker
+    global det, fps, init_track, x1_ball, y1_ball, x2_ball, y2_ball, tracker, semaphore
 
     cv_image = bridge.imgmsg_to_cv2(data, "passthrough")
     rows, cols, channels = cv_image.shape
@@ -108,13 +125,15 @@ def callback(data):
 
     cv2.imshow("img",cv_image)
     cv2.waitKey(1)
+
+    semaphore = True
     
 def listener():
 
 
     rospy.init_node('test_node')
 
-    rospy.Subscriber("/robot1/camera1/image_raw", Image, callback)
+    rospy.Subscriber("/robot1/camera1/image_raw", Image, callback_with_threading)
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
