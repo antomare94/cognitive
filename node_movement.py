@@ -14,37 +14,77 @@ def makeSimpleProfile(output, input, slop):
     return output
 
 ANG_VEL_STEP_SIZE = 0.1
+LIN_VEL_STEP_SIZE = 0.01
 
 control_angular_vel = 0
+control_linear_vel = 0
 
-def callback(data):
+def perform_movement(target_linear_vel = 0.0,target_angular_vel = 0.0):
 
-    global control_angular_vel
-
-    x_ball,y_ball = data.data
-
-    # print(x_ball)
-    # print(y_ball)
+    global control_angular_vel,control_linear_vel
 
     twist = Twist()
 
+    control_linear_vel = makeSimpleProfile(control_linear_vel, target_linear_vel, (LIN_VEL_STEP_SIZE/2.0))
+
+    twist.linear.x = target_linear_vel; twist.linear.y = 0.0; twist.linear.z = 0.0
+
+    control_angular_vel = makeSimpleProfile(control_angular_vel, target_angular_vel, (ANG_VEL_STEP_SIZE/2.0))
+        
+    twist.angular.x = 0.0; twist.angular.y = 0.0; twist.angular.z = control_angular_vel
+
+    return twist
+
+
+fps_no_det = 0
+x_ball_old = 0
+y_ball_old = 0
+
+def callback(data):
+
+    global fps_no_det,x_ball_old,y_ball_old
+
+    x_ball,y_ball = data.data
+
+    print(x_ball)
+    print(y_ball)
+
+
     if(x_ball == 0 and y_ball == 0):
         # No ball detection
-        
-        twist.linear.x = 0.0; twist.linear.y = 0.0; twist.linear.z = 0.0
+        fps_no_det += 1
+        if (fps_no_det > 30):
+            print("giro a cercare la palla")
+            twist = perform_movement(0.0,2)
+        else:
+            print("uso x,y vecchi")
+            if (x_ball_old < 280 or x_ball_old > 360):
+                if(x_ball_old > 280):
+                    print("giro a destra")
+                    twist = perform_movement(0.0,-2)
+                else:
+                    print("giro a sinistra")
+                    twist = perform_movement(0.0,2)
+            else:
+                twist = perform_movement(1,0)
+                print("vado avanti")
 
-        target_angular_vel = 2
-
-        control_angular_vel = makeSimpleProfile(control_angular_vel, target_angular_vel, (ANG_VEL_STEP_SIZE/2.0))
-        
-        twist.angular.x = 0.0; twist.angular.y = 0.0; twist.angular.z = control_angular_vel
-
-        pub.publish(twist)
     else:
-        twist.linear.x = 0.0; twist.linear.y = 0.0; twist.linear.z = 0.0
-        twist.angular.x = 0.0; twist.angular.y = 0.0; twist.angular.z = control_angular_vel
+        fps_no_det = 0
+        x_ball_old = x_ball
+        y_ball_old = y_ball
+        if (x_ball < 280 or x_ball > 360):
+            if(x_ball > 280):
+                print("giro a destra")
+                twist = perform_movement(0.0,-2)
+            else:
+                print("giro a sinistra")
+                twist = perform_movement(0.0,2)
+        else:
+            twist = perform_movement(1,0)
+            print("vado avanti")
 
-        pub.publish(twist)
+    pub.publish(twist)  
     
 
 
