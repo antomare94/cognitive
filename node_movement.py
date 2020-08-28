@@ -59,7 +59,7 @@ def callback(data):
         else:
             print("uso x,y vecchi")
             if (x_ball_old < 280 or x_ball_old > 360):
-                if(x_ball_old > 280):
+                if(x_ball_old > 360):
                     print("giro a destra")
                     twist = perform_movement(0.0,-2)
                 else:
@@ -74,7 +74,7 @@ def callback(data):
         x_ball_old = x_ball
         y_ball_old = y_ball
         if (x_ball < 280 or x_ball > 360):
-            if(x_ball > 280):
+            if(x_ball > 360):
                 print("giro a destra")
                 twist = perform_movement(0.0,-2)
             else:
