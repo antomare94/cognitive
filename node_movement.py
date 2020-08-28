@@ -3,6 +3,7 @@ import rospy
 from std_msgs.msg import String,Int16MultiArray
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+from tf.transformations import euler_from_quaternion
 
 def makeSimpleProfile(output, input, slop):
     if input > output:
@@ -42,18 +43,18 @@ x_ball_old = 0
 y_ball_old = 0
 x_robot = 0
 y_robot = 0
-orientation_z = 0
+yaw_robot = 0
 
 def callback(data):
 
-    global fps_no_det,x_ball_old,y_ball_old
+    global fps_no_det, x_ball_old, y_ball_old
 
     x_ball,y_ball = data.data
 
-    ball_vicina = False
+    ball_is_close = False
 
-    print(x_ball)
-    print(y_ball)
+    # print(x_ball)
+    # print(y_ball)
 
 
     if(x_ball == 0 and y_ball == 0):
@@ -90,19 +91,28 @@ def callback(data):
             twist = perform_movement(1,0)
             print("vado avanti")
         if y_ball < 50:
-            ball_vicina = True
+            ball_is_close = True
 
 
 
     pub.publish(twist)  
     
-def odomCallback(msg):
-    global x_robot,y_robot,orientation_z
+def odometry_callback(msg):
+    global x_robot,y_robot,yaw_robot
 
     x_robot = msg.pose.pose.position.x
     y_robot = msg.pose.pose.position.y
 
-    orientation_z = msg.pose.pose.orientation.z
+    orientation_values = msg.pose.pose.orientation
+    orientation_list = [orientation_values.x, orientation_values.y, orientation_values.z, orientation_values.w]
+    (roll, pitch, yaw) = euler_from_quaternion(orientation_list)
+    yaw_robot = yaw
+
+    # yaw_robot in radians
+    # Positive values until 180° (π rad) in the trigonometric direction (anticlockwise)
+    # Negative values until 180° (-π rad) in the anti-trigonometric direction (clockwise)
+    # ! Here, π rad = -π rad
+    print(yaw_robot)
 
 
     
@@ -115,7 +125,7 @@ def listener():
 
     #rospy.Subscriber("/Ball_Info", Int16MultiArray, callback)
 
-    rospy.Subscriber("/robot1/odom", Odometry, odomCallback)
+    rospy.Subscriber("/robot1/odom", Odometry, odometry_callback)
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()

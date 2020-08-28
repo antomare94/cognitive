@@ -20,7 +20,7 @@ bridge = CvBridge()
 
 def initialize_tracker(i):
 
-    tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'GOTURN', 'MOSSE', 'CSRT']
+    tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'MOSSE', 'CSRT']
 
     tracker_type = tracker_types[i]
 
@@ -123,7 +123,7 @@ def callback(data):
         tracking_ball_detected = False
 
         if init_track:
-            tracker = initialize_tracker(7) #oppure 2
+            tracker = initialize_tracker(6) #oppure 2
             bbox = (x1_ball,y1_ball,abs(x2_ball-x1_ball),abs(y2_ball-y1_ball))
             ok = tracker.init(cv_image, bbox)
 
