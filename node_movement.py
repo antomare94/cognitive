@@ -2,6 +2,7 @@
 import rospy
 from std_msgs.msg import String,Int16MultiArray
 from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
 
 def makeSimpleProfile(output, input, slop):
     if input > output:
@@ -39,12 +40,17 @@ def perform_movement(target_linear_vel = 0.0,target_angular_vel = 0.0):
 fps_no_det = 0
 x_ball_old = 0
 y_ball_old = 0
+x_robot = 0
+y_robot = 0
+orientation_z = 0
 
 def callback(data):
 
     global fps_no_det,x_ball_old,y_ball_old
 
     x_ball,y_ball = data.data
+
+    ball_vicina = False
 
     print(x_ball)
     print(y_ball)
@@ -83,9 +89,20 @@ def callback(data):
         else:
             twist = perform_movement(1,0)
             print("vado avanti")
+        if y_ball < 50:
+            ball_vicina = True
+
+
 
     pub.publish(twist)  
     
+def odomCallback(msg):
+    global x_robot,y_robot,orientation_z
+
+    x_robot = msg.pose.pose.position.x
+    y_robot = msg.pose.pose.position.y
+
+    orientation_z = msg.pose.pose.orientation.z
 
 
     
@@ -96,7 +113,9 @@ def listener():
 
     rospy.init_node('node_movement')
 
-    rospy.Subscriber("/Ball_Info", Int16MultiArray, callback)
+    #rospy.Subscriber("/Ball_Info", Int16MultiArray, callback)
+
+    rospy.Subscriber("/robot1/odom", Odometry, odomCallback)
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
