@@ -4,6 +4,8 @@ from std_msgs.msg import String,Int16MultiArray
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
+import math
+import numpy as np
 
 def makeSimpleProfile(output, input, slop):
     if input > output:
@@ -106,13 +108,26 @@ def odometry_callback(msg):
     orientation_values = msg.pose.pose.orientation
     orientation_list = [orientation_values.x, orientation_values.y, orientation_values.z, orientation_values.w]
     (roll, pitch, yaw) = euler_from_quaternion(orientation_list)
-    yaw_robot = yaw
 
     # yaw_robot in radians
-    # Positive values until 180° (π rad) in the trigonometric direction (anticlockwise)
-    # Negative values until 180° (-π rad) in the anti-trigonometric direction (clockwise)
-    # ! Here, π rad = -π rad
-    print(yaw_robot)
+    # Positive values until 180 degrees (pi rad) in the trigonometric direction (anticlockwise)
+    # Negative values until 180 degrees (-pi rad) in the anti-trigonometric direction (clockwise)
+    # ! Here, pi rad = -pi rad
+    yaw_robot = yaw
+
+    # The cuurdinates 0, 0 are at the center of the field
+    x_goal = 6.0
+    y_goal = 0.0
+
+    x_distance_to_goal = x_goal - x_robot  # Always the positive distance, given the geometry
+    y_distance_to_goal = y_goal - y_robot  # Negative if the robot has to travel in the direction of -y,
+                                           # positive if he robot has to travel in the direction of y
+    euclidian_distance_to_goal = math.sqrt(x_distance_to_goal**2 + y_distance_to_goal**2)
+
+    # The yaw to be achieved by the robot, follows the same convention as yaw_robot
+    target_yaw = np.arcsin(y_distance_to_goal / euclidian_distance_to_goal)
+
+    print(target_yaw, yaw_robot)
 
 
     
