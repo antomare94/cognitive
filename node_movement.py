@@ -46,61 +46,76 @@ y_ball_old = 0
 x_robot = 0
 y_robot = 0
 yaw_robot = 0
+target_yaw = 0
+ball_is_close = False
 
 def callback(data):
 
-    global fps_no_det, x_ball_old, y_ball_old
+    global fps_no_det, x_ball_old, y_ball_old,ball_is_close,x_robot
 
     x_ball,y_ball = data.data
-
-    ball_is_close = False
 
     # print(x_ball)
     # print(y_ball)
 
+    if not ball_is_close:
+        if(x_ball == 0 and y_ball == 0):
+            # No ball detection
+            fps_no_det += 1
+            if (fps_no_det > 30):
+                print("giro a cercare la palla")
+                twist = perform_movement(0.0,2)
+            else:
+                print("uso x,y vecchi")
+                if (x_ball_old < 280 or x_ball_old > 360):
+                    if(x_ball_old > 360):
+                        print("giro a destra")
+                        twist = perform_movement(0.0,-1)
+                    else:
+                        print("giro a sinistra")
+                        twist = perform_movement(0.0,1)
+                else:
+                    twist = perform_movement(0.1,0)
+                    print("vado avanti")
+                if y_ball_old > 320:
+                    ball_is_close = True
+                else:
+                    ball_is_close = False
 
-    if(x_ball == 0 and y_ball == 0):
-        # No ball detection
-        fps_no_det += 1
-        if (fps_no_det > 30):
-            print("giro a cercare la palla")
-            twist = perform_movement(0.0,2)
         else:
-            print("uso x,y vecchi")
-            if (x_ball_old < 280 or x_ball_old > 360):
-                if(x_ball_old > 360):
+            fps_no_det = 0
+            x_ball_old = x_ball
+            y_ball_old = y_ball
+            if (x_ball < 280 or x_ball > 360):
+                if(x_ball > 360):
                     print("giro a destra")
-                    twist = perform_movement(0.0,-2)
+                    twist = perform_movement(0.0,-1)
                 else:
                     print("giro a sinistra")
-                    twist = perform_movement(0.0,2)
+                    twist = perform_movement(0.0,1)
             else:
-                twist = perform_movement(1,0)
+                twist = perform_movement(0.1,0)
                 print("vado avanti")
-
-    else:
-        fps_no_det = 0
-        x_ball_old = x_ball
-        y_ball_old = y_ball
-        if (x_ball < 280 or x_ball > 360):
-            if(x_ball > 360):
-                print("giro a destra")
-                twist = perform_movement(0.0,-2)
+            if y_ball > 320:
+                ball_is_close = True
             else:
-                print("giro a sinistra")
-                twist = perform_movement(0.0,2)
+                ball_is_close = False
+    else:
+        yaw_diff = abs(yaw_robot-target_yaw)
+        if yaw_robot > target_yaw and yaw_diff > 0.1:
+            print("palla vicina - gira a destra")
+            twist = perform_movement(0.1,-1)
+        elif  yaw_robot < target_yaw and yaw_diff > 0.1:
+            print("palla vicina - gira a sinistra")
+            twist = perform_movement(0.1,1)
         else:
-            twist = perform_movement(1,0)
-            print("vado avanti")
-        if y_ball < 50:
-            ball_is_close = True
-
-
-
+            print("palla vicina - vai a avanti")
+            twist = perform_movement(0.1,0)
+     
     pub.publish(twist)  
     
 def odometry_callback(msg):
-    global x_robot,y_robot,yaw_robot
+    global x_robot,y_robot,yaw_robot,target_yaw
 
     x_robot = msg.pose.pose.position.x
     y_robot = msg.pose.pose.position.y
@@ -127,7 +142,7 @@ def odometry_callback(msg):
     # The yaw to be achieved by the robot, follows the same convention as yaw_robot
     target_yaw = np.arcsin(y_distance_to_goal / euclidian_distance_to_goal)
 
-    print(target_yaw, yaw_robot)
+    #print(target_yaw, yaw_robot)
 
 
     
@@ -138,7 +153,7 @@ def listener():
 
     rospy.init_node('node_movement')
 
-    #rospy.Subscriber("/Ball_Info", Int16MultiArray, callback)
+    rospy.Subscriber("/Ball_Info", Int16MultiArray, callback)
 
     rospy.Subscriber("/robot1/odom", Odometry, odometry_callback)
 
