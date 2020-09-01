@@ -63,12 +63,12 @@ def callback(data):
     # print(x_ball)
     # print(y_ball)
 
-    # Constants
-    BALL_CENTERED = 0
-    BALL_IN_LEFT_CORNER = 1
-    BALL_IN_RIGHT_CORNER = 2
-    WINDOW_WIDTH = 640
-    MARGIN = 50
+    # # Constants
+    # BALL_CENTERED = 0
+    # BALL_IN_LEFT_CORNER = 1
+    # BALL_IN_RIGHT_CORNER = 2
+    # WINDOW_WIDTH = 640
+    # MARGIN = 50
 
     if(x_ball == 0 and y_ball == 0):
         
@@ -99,32 +99,32 @@ def callback(data):
 
     if ball_is_close:  # Movement close to the ball
 
-        if x_ball < MARGIN:
-            ball_position = BALL_IN_LEFT_CORNER
-        elif x_ball > WINDOW_WIDTH - MARGIN:
-            ball_position = BALL_IN_RIGHT_CORNER
+        # if x_ball < MARGIN:
+        #     ball_position = BALL_IN_LEFT_CORNER
+        # elif x_ball > WINDOW_WIDTH - MARGIN:
+        #     ball_position = BALL_IN_RIGHT_CORNER
+        # else:
+        #     ball_position = BALL_CENTERED
+
+        # if ball_position == BALL_IN_LEFT_CORNER:
+        #     print("palla in angolo sinistra - repositioning")
+        #     twist = perform_movement(-0.2, -0.5)
+
+        # elif ball_position == BALL_IN_RIGHT_CORNER:
+        #     print("palla in angolo desstra - repositioning")
+        #     twist = perform_movement(-0.2, 0.5)
+
+        # else:
+        yaw_diff = abs(yaw_robot-target_yaw)
+        if yaw_robot > target_yaw and yaw_diff > 0.1:
+            print("palla vicina - gira a destra")
+            twist = perform_movement(0.1,-0.5)
+        elif  yaw_robot < target_yaw and yaw_diff > 0.1:
+            print("palla vicina - gira a sinistra")
+            twist = perform_movement(0.1,0.5)
         else:
-            ball_position = BALL_CENTERED
-
-        if ball_position == BALL_IN_LEFT_CORNER:
-            print("palla in angolo sinistra - repositioning")
-            twist = perform_movement(-0.2, -0.5)
-
-        elif ball_position == BALL_IN_RIGHT_CORNER:
-            print("palla in angolo desstra - repositioning")
-            twist = perform_movement(-0.2, 0.5)
-
-        else:
-            yaw_diff = abs(yaw_robot-target_yaw)
-            if yaw_robot > target_yaw and yaw_diff > 0.1:
-                print("palla vicina - gira a destra")
-                twist = perform_movement(0.1,-0.5)
-            elif  yaw_robot < target_yaw and yaw_diff > 0.1:
-                print("palla vicina - gira a sinistra")
-                twist = perform_movement(0.1,0.5)
-            else:
-                print("palla vicina - vai a avanti")
-                twist = perform_movement(0.1,0)
+            print("palla vicina - vai a avanti")
+            twist = perform_movement(0.1,0)
 
     elif no_ball_detected_counter == 0:  # Movement when the ball is far away, but detected
 
