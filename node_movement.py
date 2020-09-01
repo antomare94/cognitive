@@ -40,54 +40,42 @@ def perform_movement(target_linear_vel = 0.0,target_angular_vel = 0.0):
     return twist
 
 
-fps_no_det = 0
-x_ball_old = 0
-y_ball_old = 0
+no_ball_detected_counter = 0  # Number of frames since the ball was last detected
 x_robot = 0
 y_robot = 0
 yaw_robot = 0
 target_yaw = 0
-ball_is_close = False
+
+x_ball_old = 0
+y_ball_old = 0
+
+close_ball_counter = 0  # If close_ball_counter > 0, then the ball_is_close was true less than 3 frames ago.
 
 def callback(data):
 
-    global fps_no_det, x_ball_old, y_ball_old,ball_is_close,x_robot
+    global no_ball_detected_counter, x_robot, x_ball_old, y_ball_old, close_ball_counter
+
+    ball_is_close = False
 
     x_ball,y_ball = data.data
 
     # print(x_ball)
     # print(y_ball)
 
-    if not ball_is_close:
-        if(x_ball == 0 and y_ball == 0):
-            # No ball detection
-            fps_no_det += 1
-            if (fps_no_det > 30):
-                print("giro a cercare la palla")
-                twist = perform_movement(0.0,2)
-            else:
-                print("uso x,y vecchi")
-                if (x_ball_old < 280 or x_ball_old > 360):
-                    if(x_ball_old > 360):
-                        print("giro a destra")
-                        twist = perform_movement(0.0,-1)
-                    else:
-                        print("giro a sinistra")
-                        twist = perform_movement(0.0,1)
-                else:
-                    twist = perform_movement(0.1,0)
-                    print("vado avanti")
-                if y_ball_old > 320:
-                    ball_is_close = True
-                else:
-                    ball_is_close = False
+    if(x_ball == 0 and y_ball == 0):
+        
+        # No ball detection
+        ball_is_close = False
+        no_ball_detected_counter += 1
 
+        if (no_ball_detected_counter > 30):
+            print("giro a cercare la palla")
+            twist = perform_movement(0.0,2)
+        
         else:
-            fps_no_det = 0
-            x_ball_old = x_ball
-            y_ball_old = y_ball
-            if (x_ball < 280 or x_ball > 360):
-                if(x_ball > 360):
+            print("uso x,y vecchi")
+            if (x_ball_old < 280 or x_ball_old > 360):
+                if(x_ball_old > 360):
                     print("giro a destra")
                     twist = perform_movement(0.0,-1)
                 else:
@@ -96,11 +84,30 @@ def callback(data):
             else:
                 twist = perform_movement(0.1,0)
                 print("vado avanti")
-            if y_ball > 320:
-                ball_is_close = True
-            else:
-                ball_is_close = False
+
     else:
+
+        no_ball_detected_counter = 0
+
+        x_ball_old = x_ball
+        y_ball_old = y_ball
+        
+        if y_ball > 300:
+            ball_is_close = True
+            close_ball_counter = 3
+        else:
+            ball_is_close = False
+            close_ball_counter = 0
+
+    # Overrite the ball_is_close boolean if it was detected as close less than 3 frames ago
+    if close_ball_counter > 0 and not ball_is_close:
+        ball_is_close = True
+        x_ball = x_ball_old
+        y_ball = y_ball_old
+        close_ball_counter -= 1
+
+    if ball_is_close:  # Movement close to the ball
+
         yaw_diff = abs(yaw_robot-target_yaw)
         if yaw_robot > target_yaw and yaw_diff > 0.1:
             print("palla vicina - gira a destra")
@@ -111,6 +118,20 @@ def callback(data):
         else:
             print("palla vicina - vai a avanti")
             twist = perform_movement(0.1,0)
+
+    elif no_ball_detected_counter == 0:  # Movement when the ball is far away, but detected
+
+        if (x_ball < 280 or x_ball > 360):
+            if(x_ball > 360):
+                print("giro a destra")
+                twist = perform_movement(0.0,-1)
+            else:
+                print("giro a sinistra")
+                twist = perform_movement(0.0,1)
+        
+        else:
+            twist = perform_movement(0.1,0)
+            print("vado avanti")
      
     pub.publish(twist)  
     
