@@ -116,7 +116,8 @@ def ball_callback(data):
 
         # else:
         yaw_diff = abs(yaw_robot-target_yaw)
-        if no_obstacle:
+        if info_obstacle[1] == 0:
+            
             if yaw_robot > target_yaw and yaw_diff > 0.1:
                 print("palla vicina - gira a destra")
                 twist = perform_movement(0.1,-0.5)
@@ -127,7 +128,28 @@ def ball_callback(data):
                 print("palla vicina - vai a avanti")
                 twist = perform_movement(0.1,0)
         else:
-            pass
+            if info_obstacle[0] == 1:
+                # ho l'ostacolo al centro e a sinistra ([1,1,0]) quindi giro a destra
+                print("ostacolo a sinistra - gira a destra")
+                twist = perform_movement(0.1,-0.5)
+
+            elif info_obstacle[2] == 1: 
+                # ho l'ostacolo al centro e a destra ([0,1,1]) quindi giro a sinistra
+                print("ostacolo a destra - gira a sinistra")
+                twist = perform_movement(0.1,0.5)
+            else:
+                # ho l'ostacolo solo a centro o in tutte e tre
+                if yaw_robot > target_yaw and yaw_diff > 0.1:
+                    print("ostacolo al centro - gira a destra")
+                    twist = perform_movement(0.1,-0.5)
+                elif  yaw_robot < target_yaw and yaw_diff > 0.1:
+                    print("ostacolo al centro - gira a sinistra")
+                    twist = perform_movement(0.1,0.5)
+                else:
+                    # default gira a sinistra se robot e gia allineato e ha l'ostacolo al centro
+                    print("ostacolo al centro - gira a sinistra default")
+                    twist = perform_movement(0.1,0.5)
+       
 
     elif no_ball_detected_counter == 0:  # Movement when the ball is far away, but detected
 
@@ -165,9 +187,9 @@ def ball_callback(data):
     pub.publish(twist)  
 
 def obstacle_callback(data):
-    #global info_obstacle
+    global info_obstacle
     info_obstacle=data.data
-    #print(info_obstacle)
+    print(info_obstacle)
 
 def odometry_callback(msg):
     global x_robot,y_robot,yaw_robot,target_yaw
