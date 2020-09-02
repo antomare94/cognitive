@@ -51,11 +51,44 @@ y2_ball = 0
 tracker = None
 
 arr_cords_ball = [0,0]
-
+info_obstacle = [0,0,0]
 previous_image = None
 image = np.zeros((2, 2))  # Blank image for initialization
+result = np.zeros((2, 2))  # Blank image for initialization
 
 semaphore = True  # Semaphore to limit when the callback function is called
+
+def detect_obstacle(cv_image):
+
+    global info_obstacle
+
+    cv_image = cv2.cvtColor(cv_image,cv2.COLOR_BGR2RGB)
+    hsv = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
+    # Threshold of blue in HSV space 
+    lower_red = np.array([0,120,70])
+    upper_red = np.array([10,255,255])
+ 
+    # preparing the mask to overlay 
+    mask = cv2.inRange(hsv, lower_red, upper_red) 
+      
+    # The black region in the mask has the value of 0, 
+    # so when multiplied with original image removes all non-blue regions 
+    result = cv2.bitwise_and(cv_image, cv_image, mask = mask) 
+    
+    #cv2.imshow('frame', cv_image) 
+    #cv2.imshow('mask', mask) 
+    #cv.waitKey(1)
+    center_sum=np.sum(result[:, 140:result.shape[1]-140,:])
+    left_sum=np.sum(result[:, :139,:])
+    rigth_sum=np.sum(result[:,result.shape[1]-139:,:])
+
+    info_obstacle[0]=1 if left_sum != 0 else 0
+    info_obstacle[1]=1 if center_sum != 0 else 0
+    info_obstacle[2]=1 if rigth_sum != 0 else 0
+
+    print(info_obstacle)
+
+    return result
 
 def callback_with_threading(data):
     global semaphore, image, arr_cords_ball
@@ -67,29 +100,34 @@ def callback_with_threading(data):
     else:
         print('PREVIOUS PROCESSING STEP UNFINISHED - NEW INPUT IGNORED')
 
-    print('[INFO] Ball detected position: ' + str(arr_cords_ball))
-    print('[NOTE] If equal to [0, 0] - no ball is detected')
-    pub.publish(Int16MultiArray(data=arr_cords_ball))
+    #print('[INFO] Ball detected position: ' + str(arr_cords_ball))
+    #print('[NOTE] If equal to [0, 0] - no ball is detected')
+    pub_ball.publish(Int16MultiArray(data=arr_cords_ball))
+    pub_obstacle.publish(Int16MultiArray(data=info_obstacle))
+
 
     print('----------------------------------------')
 
     cv2.imshow("img", image)
+    cv2.imshow('result', result) 
     cv2.waitKey(1)
 
 def callback(data):
 
-    print('IMAGE PROCESSING BEGINS')
+    #print('IMAGE PROCESSING BEGINS')
 
-    global det, fps, init_track, x1_ball, y1_ball, x2_ball, y2_ball, tracker, semaphore, previous_image, image, arr_cords_ball
+    global det, fps, init_track, x1_ball, y1_ball, x2_ball, y2_ball, tracker, semaphore, previous_image, image, arr_cords_ball, result
 
     cv_image = bridge.imgmsg_to_cv2(data, "passthrough")
     rows, cols, channels = cv_image.shape
 
     nn_ball_detected = tracking_ball_detected = False
 
+    result = detect_obstacle(cv_image)
+
     if not det:
 
-        print("[INFO] Detection type: Neural Network")
+        #print("[INFO] Detection type: Neural Network")
 
         nn_ball_detected = False
 
@@ -118,7 +156,7 @@ def callback(data):
 
     else:
 
-        print("[INFO] Detection type: Tracking")
+        #print("[INFO] Detection type: Tracking")
 
         tracking_ball_detected = False
 
@@ -164,6 +202,7 @@ def callback(data):
 
     previous_image = image
     image = cv_image
+    
 
     fps_val.update()
     fps_val.stop()
@@ -187,6 +226,8 @@ def listener():
 if __name__ == '__main__':
     fps_val = FPS().start()
 
-    pub = rospy.Publisher('Ball_Info', Int16MultiArray, queue_size=1)
+    pub_ball = rospy.Publisher('Ball_Info', Int16MultiArray, queue_size=1)
+    pub_obstacle = rospy.Publisher('Obstacle_Info', Int16MultiArray, queue_size=1)
+    
 
     listener()

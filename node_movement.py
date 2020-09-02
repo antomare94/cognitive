@@ -51,9 +51,9 @@ y_ball_old = 0
 
 close_ball_counter = 0  # If close_ball_counter > 0, then the ball_is_close was true less than 3 frames ago.
 
-def callback(data):
+def ball_callback(data):
 
-    global no_ball_detected_counter, x_robot, x_ball_old, y_ball_old, close_ball_counter
+    global no_ball_detected_counter, x_robot, x_ball_old, y_ball_old, close_ball_counter,no_obstacle
 
     ball_is_close = False
     ball_position = 0  # Used only when ball_is_close is True
@@ -90,7 +90,7 @@ def callback(data):
             ball_is_close = False
             close_ball_counter = 0
 
-    # Overrite the ball_is_close boolean if it was detected as close less than 3 frames ago
+    # Override the ball_is_close boolean if it was detected as close less than 3 frames ago
     if close_ball_counter > 0 and not ball_is_close:
         ball_is_close = True
         x_ball = x_ball_old
@@ -116,15 +116,18 @@ def callback(data):
 
         # else:
         yaw_diff = abs(yaw_robot-target_yaw)
-        if yaw_robot > target_yaw and yaw_diff > 0.1:
-            print("palla vicina - gira a destra")
-            twist = perform_movement(0.1,-0.5)
-        elif  yaw_robot < target_yaw and yaw_diff > 0.1:
-            print("palla vicina - gira a sinistra")
-            twist = perform_movement(0.1,0.5)
+        if no_obstacle:
+            if yaw_robot > target_yaw and yaw_diff > 0.1:
+                print("palla vicina - gira a destra")
+                twist = perform_movement(0.1,-0.5)
+            elif  yaw_robot < target_yaw and yaw_diff > 0.1:
+                print("palla vicina - gira a sinistra")
+                twist = perform_movement(0.1,0.5)
+            else:
+                print("palla vicina - vai a avanti")
+                twist = perform_movement(0.1,0)
         else:
-            print("palla vicina - vai a avanti")
-            twist = perform_movement(0.1,0)
+            pass
 
     elif no_ball_detected_counter == 0:  # Movement when the ball is far away, but detected
 
@@ -160,7 +163,12 @@ def callback(data):
                 print("vado avanti")
      
     pub.publish(twist)  
-    
+
+def obstacle_callback(data):
+    #global info_obstacle
+    info_obstacle=data.data
+    #print(info_obstacle)
+
 def odometry_callback(msg):
     global x_robot,y_robot,yaw_robot,target_yaw
 
@@ -200,7 +208,9 @@ def listener():
 
     rospy.init_node('node_movement')
 
-    rospy.Subscriber("/Ball_Info", Int16MultiArray, callback)
+    rospy.Subscriber("/Ball_Info", Int16MultiArray, ball_callback)
+
+    rospy.Subscriber("/Obstacle_Info", Int16MultiArray, obstacle_callback)
 
     rospy.Subscriber("/robot1/odom", Odometry, odometry_callback)
 
