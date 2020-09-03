@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-from std_msgs.msg import String,Int16MultiArray
+from std_msgs.msg import String,Int32MultiArray,Int16MultiArray
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
@@ -51,9 +51,11 @@ y_ball_old = 0
 
 close_ball_counter = 0  # If close_ball_counter > 0, then the ball_is_close was true less than 3 frames ago.
 
+info_obstacle = [0,0,0]
+
 def ball_callback(data):
 
-    global no_ball_detected_counter, x_robot, x_ball_old, y_ball_old, close_ball_counter,no_obstacle
+    global no_ball_detected_counter, x_robot, x_ball_old, y_ball_old, close_ball_counter,info_obstacle
 
     ball_is_close = False
     ball_position = 0  # Used only when ball_is_close is True
@@ -75,6 +77,8 @@ def ball_callback(data):
         # No ball detection
         ball_is_close = False
         no_ball_detected_counter += 1
+
+
 
     else:
 
@@ -128,13 +132,13 @@ def ball_callback(data):
                 print("palla vicina - vai a avanti")
                 twist = perform_movement(0.1,0)
         else:
-            if info_obstacle[0] == 1:
-                # ho l'ostacolo al centro e a sinistra ([1,1,0]) quindi giro a destra
+            if info_obstacle[0] != 0:
+                # ho l'ostacolo al centro e a sinistra ([x,x,0]) quindi giro a destra
                 print("ostacolo a sinistra - gira a destra")
                 twist = perform_movement(0.1,-0.5)
 
-            elif info_obstacle[2] == 1: 
-                # ho l'ostacolo al centro e a destra ([0,1,1]) quindi giro a sinistra
+            elif info_obstacle[2] != 0: 
+                # ho l'ostacolo al centro e a destra ([0,x,x]) quindi giro a sinistra
                 print("ostacolo a destra - gira a sinistra")
                 twist = perform_movement(0.1,0.5)
             else:
@@ -168,8 +172,24 @@ def ball_callback(data):
     else:
 
         if (no_ball_detected_counter > 30):
-            print("giro a cercare la palla")
-            twist = perform_movement(0.0,2)
+            # devo cercare la palla
+            yaw_diff = abs(yaw_robot-target_yaw)
+            if (info_obstacle[0] == 0 and info_obstacle[1] == 0 and info_obstacle[2] == 0):
+                # allineati alla porta
+                if yaw_robot > target_yaw and yaw_diff > 0.1:
+                    print("palla vicina - gira a destra")
+                    twist = perform_movement(0.1,-0.5)
+                elif  yaw_robot < target_yaw and yaw_diff > 0.1:
+                    print("palla vicina - gira a sinistra")
+                    twist = perform_movement(0.1,0.5)
+                else:
+                    pass
+                    #dovremmo farla girare di 180° o 360°
+                
+            
+
+            
+
         
         else:
             print("uso x,y vecchi")
@@ -181,7 +201,7 @@ def ball_callback(data):
                     print("giro a sinistra")
                     twist = perform_movement(0.0,1)
             else:
-                twist = perform_movement(0.1,0)
+                twist = perform_movement(0.5,0)
                 print("vado avanti")
      
     pub.publish(twist)  
@@ -189,6 +209,7 @@ def ball_callback(data):
 def obstacle_callback(data):
     global info_obstacle
     info_obstacle=data.data
+    info_obstacle = info_obstacle/4000000
     print(info_obstacle)
 
 def odometry_callback(msg):
@@ -232,7 +253,7 @@ def listener():
 
     rospy.Subscriber("/Ball_Info", Int16MultiArray, ball_callback)
 
-    rospy.Subscriber("/Obstacle_Info", Int16MultiArray, obstacle_callback)
+    rospy.Subscriber("/Obstacle_Info", Int32MultiArray, obstacle_callback)
 
     rospy.Subscriber("/robot1/odom", Odometry, odometry_callback)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-from std_msgs.msg import String, Int16MultiArray
+from std_msgs.msg import String, Int16MultiArray, Int32MultiArray
 import cv2 
 import os
 from cv_bridge import CvBridge, CvBridgeError
@@ -82,9 +82,9 @@ def detect_obstacle(cv_image):
     left_sum=np.sum(result[:, :139,:])
     rigth_sum=np.sum(result[:,result.shape[1]-139:,:])
 
-    info_obstacle[0]=1 if left_sum != 0 else 0
-    info_obstacle[1]=1 if center_sum != 0 else 0
-    info_obstacle[2]=1 if rigth_sum != 0 else 0
+    info_obstacle[0]= left_sum 
+    info_obstacle[1]= center_sum
+    info_obstacle[2]= rigth_sum
 
     print(info_obstacle)
 
@@ -227,7 +227,7 @@ if __name__ == '__main__':
     fps_val = FPS().start()
 
     pub_ball = rospy.Publisher('Ball_Info', Int16MultiArray, queue_size=1)
-    pub_obstacle = rospy.Publisher('Obstacle_Info', Int16MultiArray, queue_size=1)
+    pub_obstacle = rospy.Publisher('Obstacle_Info', Int32MultiArray, queue_size=1)
     
 
     listener()
