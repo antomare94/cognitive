@@ -184,7 +184,7 @@ def ball_callback(data):
                     twist = perform_movement(0.1,0.5)
                 else:
                     pass
-                    #dovremmo farla girare di 180° o 360°
+                    #dovremmo farla girare di 180 deg. o 360 deg.
                 
             
 
@@ -209,7 +209,7 @@ def ball_callback(data):
 def obstacle_callback(data):
     global info_obstacle
     info_obstacle=data.data
-    info_obstacle = info_obstacle/4000000
+    info_obstacle = [x/4000000 for x in info_obstacle]
     print(info_obstacle)
 
 def odometry_callback(msg):

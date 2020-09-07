@@ -103,7 +103,7 @@ def callback_with_threading(data):
     #print('[INFO] Ball detected position: ' + str(arr_cords_ball))
     #print('[NOTE] If equal to [0, 0] - no ball is detected')
     pub_ball.publish(Int16MultiArray(data=arr_cords_ball))
-    pub_obstacle.publish(Int16MultiArray(data=info_obstacle))
+    pub_obstacle.publish(Int32MultiArray(data=info_obstacle))
 
 
     print('----------------------------------------')
