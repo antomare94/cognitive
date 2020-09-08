@@ -123,35 +123,35 @@ def ball_callback(data):
         if info_obstacle[1] == 0:
             
             if yaw_robot > target_yaw and yaw_diff > 0.1:
-                print("palla vicina - gira a destra")
+                print("palla vicina - giro a destra")
                 twist = perform_movement(0.1,-0.5)
             elif  yaw_robot < target_yaw and yaw_diff > 0.1:
-                print("palla vicina - gira a sinistra")
+                print("palla vicina - giro a sinistra")
                 twist = perform_movement(0.1,0.5)
             else:
-                print("palla vicina - vai a avanti")
+                print("palla vicina - vado a avanti")
                 twist = perform_movement(0.1,0)
         else:
             if info_obstacle[0] != 0:
                 # ho l'ostacolo al centro e a sinistra ([x,x,0]) quindi giro a destra
-                print("ostacolo a sinistra - gira a destra")
+                print("ostacolo a sinistra - giro a destra")
                 twist = perform_movement(0.1,-0.5)
 
             elif info_obstacle[2] != 0: 
                 # ho l'ostacolo al centro e a destra ([0,x,x]) quindi giro a sinistra
-                print("ostacolo a destra - gira a sinistra")
+                print("ostacolo a destra - giro a sinistra")
                 twist = perform_movement(0.1,0.5)
             else:
                 # ho l'ostacolo solo a centro o in tutte e tre
                 if yaw_robot > target_yaw and yaw_diff > 0.1:
-                    print("ostacolo al centro - gira a destra")
+                    print("ostacolo al centro - giro a destra")
                     twist = perform_movement(0.1,-0.5)
                 elif  yaw_robot < target_yaw and yaw_diff > 0.1:
-                    print("ostacolo al centro - gira a sinistra")
+                    print("ostacolo al centro - giro a sinistra")
                     twist = perform_movement(0.1,0.5)
                 else:
                     # default gira a sinistra se robot e gia allineato e ha l'ostacolo al centro
-                    print("ostacolo al centro - gira a sinistra default")
+                    print("ostacolo al centro - giro a sinistra default")
                     twist = perform_movement(0.1,0.5)
        
 
@@ -171,25 +171,28 @@ def ball_callback(data):
 
     else:
 
-        if (no_ball_detected_counter > 30):
+        if no_ball_detected_counter > 30:
             # devo cercare la palla
             yaw_diff = abs(yaw_robot-target_yaw)
-            if (info_obstacle[0] == 0 and info_obstacle[1] == 0 and info_obstacle[2] == 0):
-                # allineati alla porta
+
+            if no_ball_detected_counter > 60 and info_obstacle[1] == 0 and (info_obstacle[0] != 0 or info_obstacle[2] != 0):
+                 # We've been turning for a while and the obstacle is near us but not directly in front of us
+                 # -> We move forward
+                print("cercando la palla - vado avanti")
+                twist = perform_movement(0.1,0)
+
+            else:
+                 # allineati alla porta
                 if yaw_robot > target_yaw and yaw_diff > 0.1:
-                    print("palla vicina - gira a destra")
-                    twist = perform_movement(0.1,-0.5)
+                    print("cercando la palla - giro a destra")
+                    twist = perform_movement(0.0,-1)
                 elif  yaw_robot < target_yaw and yaw_diff > 0.1:
-                    print("palla vicina - gira a sinistra")
-                    twist = perform_movement(0.1,0.5)
+                    print("cercando la palla - giro a sinistra")
+                    twist = perform_movement(0.0,1)
                 else:
-                    pass
-                    #dovremmo farla girare di 180 deg. o 360 deg.
-                
-            
-
-            
-
+                    # Move towards the goal
+                    print("cercando la palla - vado verso la porta")
+                    twist = perform_movement(0.1,0)
         
         else:
             print("uso x,y vecchi")
