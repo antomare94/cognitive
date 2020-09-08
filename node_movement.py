@@ -51,11 +51,14 @@ y_ball_old = 0
 
 close_ball_counter = 0  # If close_ball_counter > 0, then the ball_is_close was true less than 3 frames ago.
 
+phase_counter = 0  # Used if the ball is not detected
+is_in_phase_1 = True
+
 info_obstacle = [0,0,0]
 
 def ball_callback(data):
 
-    global no_ball_detected_counter, x_robot, x_ball_old, y_ball_old, close_ball_counter,info_obstacle
+    global no_ball_detected_counter, x_robot, x_ball_old, y_ball_old, close_ball_counter, info_obstacle, phase_counter, is_in_phase_1
 
     ball_is_close = False
     ball_position = 0  # Used only when ball_is_close is True
@@ -101,111 +104,144 @@ def ball_callback(data):
         y_ball = y_ball_old
         close_ball_counter -= 1
 
+    print("-----------------------------------")
+
     if ball_is_close:  # Movement close to the ball
 
-        # if x_ball < MARGIN:
-        #     ball_position = BALL_IN_LEFT_CORNER
-        # elif x_ball > WINDOW_WIDTH - MARGIN:
-        #     ball_position = BALL_IN_RIGHT_CORNER
-        # else:
-        #     ball_position = BALL_CENTERED
+        print("The ball is close")
 
-        # if ball_position == BALL_IN_LEFT_CORNER:
-        #     print("palla in angolo sinistra - repositioning")
-        #     twist = perform_movement(-0.2, -0.5)
-
-        # elif ball_position == BALL_IN_RIGHT_CORNER:
-        #     print("palla in angolo desstra - repositioning")
-        #     twist = perform_movement(-0.2, 0.5)
-
-        # else:
         yaw_diff = abs(yaw_robot-target_yaw)
         if info_obstacle[1] == 0:
+
+            print("No obstacle forwards")
             
             if yaw_robot > target_yaw and yaw_diff > 0.1:
-                print("palla vicina - giro a destra")
+                print("Turnung right with the ball")
                 twist = perform_movement(0.1,-0.5)
             elif  yaw_robot < target_yaw and yaw_diff > 0.1:
-                print("palla vicina - giro a sinistra")
+                print("Turning left with the ball")
                 twist = perform_movement(0.1,0.5)
             else:
-                print("palla vicina - vado a avanti")
+                print("Going forward with the ball")
                 twist = perform_movement(0.1,0)
         else:
             if info_obstacle[0] != 0:
                 # ho l'ostacolo al centro e a sinistra ([x,x,0]) quindi giro a destra
-                print("ostacolo a sinistra - giro a destra")
+                print("Obstacle forward, but not on the right")
+                print("Turning right with the ball")
                 twist = perform_movement(0.1,-0.5)
 
             elif info_obstacle[2] != 0: 
                 # ho l'ostacolo al centro e a destra ([0,x,x]) quindi giro a sinistra
-                print("ostacolo a destra - giro a sinistra")
+                print("Obstacle forward, but not on the left")
+                print("Turning left with the ball")
                 twist = perform_movement(0.1,0.5)
             else:
                 # ho l'ostacolo solo a centro o in tutte e tre
+                print("Obstacle in all directions")
                 if yaw_robot > target_yaw and yaw_diff > 0.1:
-                    print("ostacolo al centro - giro a destra")
+                    print("Aligning with the goal")
+                    print("Trying to go around on the right")
                     twist = perform_movement(0.1,-0.5)
                 elif  yaw_robot < target_yaw and yaw_diff > 0.1:
-                    print("ostacolo al centro - giro a sinistra")
+                    print("Aligning with the goal")
+                    print("Trying to go around on the left")
                     twist = perform_movement(0.1,0.5)
                 else:
                     # default gira a sinistra se robot e gia allineato e ha l'ostacolo al centro
-                    print("ostacolo al centro - giro a sinistra default")
+                    print("Aligned with the goal")
+                    print("Trying to go around on the left")
                     twist = perform_movement(0.1,0.5)
        
 
     elif no_ball_detected_counter == 0:  # Movement when the ball is far away, but detected
 
+        print("The ball is detected, but far away")
+
         if (x_ball < 280 or x_ball > 360):
+            print("Aligning with the ball")
             if(x_ball > 360):
-                print("giro a destra")
+                print("Turning right")
                 twist = perform_movement(0.0,-1)
             else:
-                print("giro a sinistra")
+                print("Turning left")
                 twist = perform_movement(0.0,1)
         
         else:
+            print("Aligned with the ball")
+            print("Going forward")
             twist = perform_movement(0.1,0)
-            print("vado avanti")
 
     else:
 
-        if no_ball_detected_counter > 30:
-            # devo cercare la palla
-            yaw_diff = abs(yaw_robot-target_yaw)
+        print("The ball is not detected")
+        # Alternating between 2 phases:
+        # Phase 1: Turn 360 deg. to look around for the ball
+        # Phase 2: Move towards the goal
 
-            if no_ball_detected_counter > 60 and info_obstacle[1] == 0 and (info_obstacle[0] != 0 or info_obstacle[2] != 0):
-                 # We've been turning for a while and the obstacle is near us but not directly in front of us
-                 # -> We move forward
-                print("cercando la palla - vado avanti")
-                twist = perform_movement(0.1,0)
+        FRAMES_BETWEEN_PHASES = 500
 
-            else:
-                 # allineati alla porta
+        # To switch between phases
+        if phase_counter > FRAMES_BETWEEN_PHASES:
+            phase_counter = 0
+            is_in_phase_1 = not is_in_phase_1  # Toggle the boolean
+        phase_counter += 1
+
+        # Phase 1
+        if is_in_phase_1:
+            print("Looking around for the ball")
+            print("Turning right")
+            twist = perform_movement(0.0,-1)
+
+        # Phase 2
+        else:
+            
+            print("Moving towards the goal")
+
+            yaw_diff = abs(yaw_robot - target_yaw)
+
+            if info_obstacle[1] == 0:
+                print("No obstacle forwards")
                 if yaw_robot > target_yaw and yaw_diff > 0.1:
-                    print("cercando la palla - giro a destra")
-                    twist = perform_movement(0.0,-1)
+                    print("Aligning with the goal")
+                    print("Turning right")
+                    twist = perform_movement(0.0, -1)
                 elif  yaw_robot < target_yaw and yaw_diff > 0.1:
-                    print("cercando la palla - giro a sinistra")
-                    twist = perform_movement(0.0,1)
+                    print("Aligning with the goal")
+                    print("Turning left")
+                    twist = perform_movement(0.0, 1)
                 else:
                     # Move towards the goal
-                    print("cercando la palla - vado verso la porta")
+                    print("Aligned with the goal")
+                    print("Moving forward")
                     twist = perform_movement(0.1,0)
-        
-        else:
-            print("uso x,y vecchi")
-            if (x_ball_old < 280 or x_ball_old > 360):
-                if(x_ball_old > 360):
-                    print("giro a destra")
-                    twist = perform_movement(0.0,-1)
-                else:
-                    print("giro a sinistra")
-                    twist = perform_movement(0.0,1)
+            
+            # !!! The following is almost a copy-paste of code above (violates DRY principle)
             else:
-                twist = perform_movement(0.5,0)
-                print("vado avanti")
+                if info_obstacle[0] != 0:
+                    print("Obstacle forward, but not on the right")
+                    print("Bypassing to the right")
+                    twist = perform_movement(0.1,-0.5)
+
+                elif info_obstacle[2] != 0:
+                    print("Obstacle forward, but not on the left")
+                    print("Bypassing to the left")
+                    twist = perform_movement(0.1,0.5)
+                else:
+                    print("Obstacle in all directions")
+                    if yaw_robot > target_yaw and yaw_diff > 0.1:
+                        print("Aligning with the goal")
+                        print("Trying to bypass to the right")
+                        twist = perform_movement(0.1,-0.5)
+                    elif  yaw_robot < target_yaw and yaw_diff > 0.1:
+                        print("Aligning with the goal")
+                        print("Trying to bypass to the left")
+                        twist = perform_movement(0.1,0.5)
+                    else:
+                        # default gira a sinistra se robot e gia allineato e ha l'ostacolo al centro
+                        print("Aligned with the goal")
+                        print("Trying to bypass to the left")
+                        twist = perform_movement(0.1,0.5)
      
     pub.publish(twist)  
 
@@ -213,7 +249,7 @@ def obstacle_callback(data):
     global info_obstacle
     info_obstacle=data.data
     info_obstacle = [x/4000000 for x in info_obstacle]
-    print(info_obstacle)
+    # print(info_obstacle)
 
 def odometry_callback(msg):
     global x_robot,y_robot,yaw_robot,target_yaw
