@@ -53,12 +53,13 @@ close_ball_counter = 0  # If close_ball_counter > 0, then the ball_is_close was 
 
 phase_counter = 0  # Used if the ball is not detected
 is_in_phase_1 = True
+save_yaw_robot = True
 
 info_obstacle = [0,0,0]
 
 def ball_callback(data):
 
-    global no_ball_detected_counter, x_robot, x_ball_old, y_ball_old, close_ball_counter, info_obstacle, phase_counter, is_in_phase_1
+    global no_ball_detected_counter, x_robot, x_ball_old, y_ball_old, close_ball_counter, info_obstacle, phase_counter, is_in_phase_1, save_yaw_robot
 
     ball_is_close = False
     ball_position = 0  # Used only when ball_is_close is True
@@ -179,24 +180,30 @@ def ball_callback(data):
         # Phase 1: Turn 360 deg. to look around for the ball
         # Phase 2: Move towards the goal
 
-        FRAMES_BETWEEN_PHASES = 500
+        #FRAMES_BETWEEN_PHASES = 500
 
         # To switch between phases
-        if phase_counter > FRAMES_BETWEEN_PHASES:
-            phase_counter = 0
-            is_in_phase_1 = not is_in_phase_1  # Toggle the boolean
-        phase_counter += 1
+        if x_robot_saved + 0.4 <= x_robot <= x_robot_saved + 0.6:
+            is_in_phase_1 = True  # Toggle the boolean
+            x_robot_saved = x_robot
+            
 
         # Phase 1
-        if is_in_phase_1:
+        if is_in_phase_1 and yaw_robot != yaw_robot_saved:
             print("Looking around for the ball")
             print("Turning right")
+            if save_yaw_robot:
+                yaw_robot_saved = yaw_robot
+                save_yaw_robot = False
             twist = perform_movement(0.0,-1)
+        elif yaw_robot == yaw_robot_saved :
+            is_in_phase_1 = False
+            save_yaw_robot = True
 
         # Phase 2
         else:
             
-            print("Moving towards the goal")
+            print("Moving towards the goal in search of the ball")
 
             yaw_diff = abs(yaw_robot - target_yaw)
 
