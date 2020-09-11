@@ -240,27 +240,27 @@ def ball_callback(data):
                 if info_obstacle[0] != 0:
                     print("Obstacle forward, but not on the right")
                     print("Bypassing to the right")
-                    twist = perform_movement(0.1,-0.5)
+                    twist = perform_movement(0.05,-1)
 
                 elif info_obstacle[2] != 0:
                     print("Obstacle forward, but not on the left")
                     print("Bypassing to the left")
-                    twist = perform_movement(0.1,0.5)
+                    twist = perform_movement(0.05,1)
                 else:
                     print("Obstacle in all directions")
                     if yaw_robot > target_yaw and yaw_diff > 0.1:
                         print("Aligning with the goal")
                         print("Trying to bypass to the right")
-                        twist = perform_movement(0.1,-0.5)
+                        twist = perform_movement(0.05,-1)
                     elif  yaw_robot < target_yaw and yaw_diff > 0.1:
                         print("Aligning with the goal")
                         print("Trying to bypass to the left")
-                        twist = perform_movement(0.1,0.5)
+                        twist = perform_movement(0.05,1)
                     else:
                         # default gira a sinistra se robot e gia allineato e ha l'ostacolo al centro
                         print("Aligned with the goal")
                         print("Trying to bypass to the left")
-                        twist = perform_movement(0.1,0.5)
+                        twist = perform_movement(0.05,1)
      
     pub.publish(twist)  
 
