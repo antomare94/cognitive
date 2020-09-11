@@ -195,18 +195,22 @@ def ball_callback(data):
             
 
         # Phase 1
+        print(yaw_robot,yaw_robot_saved)
         if is_in_phase_1:
             print("Looking around for the ball")
-            print("Turning right")
+            print("Turning left")
             if save_yaw_robot:
                 yaw_robot_saved = yaw_robot
                 save_yaw_robot = False
-            twist = perform_movement(0.0,-1)
+            twist = perform_movement(0.0,1)
+
+            phase_counter+=1
         
-        elif abs(yaw_robot - yaw_robot_saved) <= 0.1:
-            is_in_phase_1 = False
-            save_yaw_robot = True
-            twist = perform_movement(0.0,0)  # no movement? 
+            if abs(yaw_robot - yaw_robot_saved) <= 0.1 and phase_counter>10:
+                is_in_phase_1 = False
+                save_yaw_robot = True
+                twist = perform_movement(0.0,0)  # no movement? 
+                phase_counter = 0
 
         # Phase 2
         else:

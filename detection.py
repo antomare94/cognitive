@@ -109,7 +109,7 @@ def callback_with_threading(data):
     print('----------------------------------------')
 
     cv2.imshow("img", image)
-    cv2.imshow('result', result) 
+    #cv2.imshow('result', result) 
     cv2.waitKey(1)
 
 def callback(data):
@@ -151,8 +151,8 @@ def callback(data):
                     x1_ball, y1_ball, x2_ball, y2_ball = x1, y1, x2, y2
                     nn_ball_detected = True
         
-                #draw a red rectangle around detected objects
-                cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0, 0, 255), thickness=2)
+                    #draw a red rectangle around detected objects
+                    cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0, 0, 255), thickness=2)
 
     else:
 
