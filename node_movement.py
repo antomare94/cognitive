@@ -60,9 +60,11 @@ yaw_robot_saved = 0
 
 info_obstacle = [0,0,0]
 
+go_forward_counter = 0
+
 def ball_callback(data):
 
-    global no_ball_detected_counter, x_robot, x_ball_old, y_ball_old, close_ball_counter, info_obstacle, phase_counter, is_in_phase_1, save_yaw_robot, x_robot_saved, yaw_robot_saved
+    global no_ball_detected_counter, x_robot, x_ball_old, y_ball_old, close_ball_counter, info_obstacle, phase_counter, is_in_phase_1, save_yaw_robot, x_robot_saved, yaw_robot_saved, go_forward_counter
 
     if x_robot_saved == 0:
         x_robot_saved = x_robot
@@ -161,7 +163,7 @@ def ball_callback(data):
                     twist = perform_movement(0.1,0.5)
        
 
-    elif no_ball_detected_counter == 0:  # Movement when the ball is far away, but detected
+    elif no_ball_detected_counter == 0 and info_obstacle[0] == 0 and info_obstacle[1] == 0 and info_obstacle[2] == 0:  # Movement when the ball is far away, but detected
 
         print("The ball is detected, but far away")
 
@@ -189,7 +191,7 @@ def ball_callback(data):
         #FRAMES_BETWEEN_PHASES = 500
 
         # To switch between phases
-        if x_robot_saved + 0.4 <= x_robot <= x_robot_saved + 0.6:
+        if x_robot_saved + 1.4 <= x_robot <= x_robot_saved + 1.6:
             is_in_phase_1 = True  # Toggle the boolean
             x_robot_saved = x_robot
             
@@ -206,7 +208,7 @@ def ball_callback(data):
 
             phase_counter+=1
         
-            if abs(yaw_robot - yaw_robot_saved) <= 0.1 and phase_counter>10:
+            if abs(yaw_robot - yaw_robot_saved) <= 0.1 and phase_counter>50:
                 is_in_phase_1 = False
                 save_yaw_robot = True
                 twist = perform_movement(0.0,0)  # no movement? 
@@ -219,48 +221,57 @@ def ball_callback(data):
 
             yaw_diff = abs(yaw_robot - target_yaw)
 
-            if info_obstacle[1] == 0:
-                print("No obstacle forwards")
-                if yaw_robot > target_yaw and yaw_diff > 0.1:
-                    print("Aligning with the goal")
-                    print("Turning right")
-                    twist = perform_movement(0.0, -1)
-                elif  yaw_robot < target_yaw and yaw_diff > 0.1:
-                    print("Aligning with the goal")
-                    print("Turning left")
-                    twist = perform_movement(0.0, 1)
-                else:
-                    # Move towards the goal
-                    print("Aligned with the goal")
+            if info_obstacle[1] == 0 and info_obstacle[0] == 0 and info_obstacle[2] == 0:
+                print("No obstacle")
+
+                if go_forward_counter != 0:
+                    print("Ignoring the goal")
                     print("Moving forward")
                     twist = perform_movement(0.1,0)
+                    go_forward_counter -= 1
+
+                else:
+                    if yaw_robot > target_yaw and yaw_diff > 0.1:
+                        print("Aligning with the goal")
+                        print("Turning right")
+                        twist = perform_movement(0.0, -1)
+                    elif  yaw_robot < target_yaw and yaw_diff > 0.1:
+                        print("Aligning with the goal")
+                        print("Turning left")
+                        twist = perform_movement(0.0, 1)
+                    else:
+                        # Move towards the goal
+                        print("Aligned with the goal")
+                        print("Moving forward")
+                        twist = perform_movement(0.1,0)
             
-            # !!! The following is almost a copy-paste of code above (violates DRY principle)
             else:
                 if info_obstacle[0] != 0:
-                    print("Obstacle forward, but not on the right")
+                    print("Obstacle not on the right")
                     print("Bypassing to the right")
                     twist = perform_movement(0.05,-1)
 
                 elif info_obstacle[2] != 0:
-                    print("Obstacle forward, but not on the left")
+                    print("Obstacle not on the left")
                     print("Bypassing to the left")
                     twist = perform_movement(0.05,1)
                 else:
                     print("Obstacle in all directions")
-                    if yaw_robot > target_yaw and yaw_diff > 0.1:
-                        print("Aligning with the goal")
-                        print("Trying to bypass to the right")
-                        twist = perform_movement(0.05,-1)
-                    elif  yaw_robot < target_yaw and yaw_diff > 0.1:
-                        print("Aligning with the goal")
-                        print("Trying to bypass to the left")
-                        twist = perform_movement(0.05,1)
-                    else:
-                        # default gira a sinistra se robot e gia allineato e ha l'ostacolo al centro
-                        print("Aligned with the goal")
-                        print("Trying to bypass to the left")
-                        twist = perform_movement(0.05,1)
+                    # if yaw_robot > target_yaw and yaw_diff > 0.1:
+                    #     print("Aligning with the goal")
+                    #     print("Trying to bypass to the right")
+                    #     twist = perform_movement(0.05,-1)
+                    # elif  yaw_robot < target_yaw and yaw_diff > 0.1:
+                    #     print("Aligning with the goal")
+                    #     print("Trying to bypass to the left")
+                    #     twist = perform_movement(0.05,1)
+                    # else:
+                    # default gira a sinistra se robot e gia allineato e ha l'ostacolo al centro
+                    # print("Aligned with the goal")
+                    print("Trying to bypass to the left")
+                    twist = perform_movement(0.05,1)
+                
+                go_forward_counter = 100
      
     pub.publish(twist)  
 
