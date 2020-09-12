@@ -278,8 +278,7 @@ def ball_callback(data):
 def obstacle_callback(data):
     global info_obstacle
     info_obstacle=data.data
-    info_obstacle = [x/4000000 for x in info_obstacle]
-    # print(info_obstacle)
+    print(info_obstacle)
 
 def odometry_callback(msg):
     global x_robot,y_robot,yaw_robot,target_yaw

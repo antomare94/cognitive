@@ -78,15 +78,41 @@ def detect_obstacle(cv_image):
     #cv2.imshow('frame', cv_image) 
     #cv2.imshow('mask', mask) 
     #cv.waitKey(1)
-    center_sum=np.sum(result[:, 140:result.shape[1]-140,:])
-    left_sum=np.sum(result[:, :139,:])
-    rigth_sum=np.sum(result[:,result.shape[1]-139:,:])
 
-    info_obstacle[0]= left_sum 
-    info_obstacle[1]= center_sum
-    info_obstacle[2]= rigth_sum
+    center_region = result[:, 100:result.shape[1]-100,:]
+    left_region = result[:, :99,:]
+    right_region = result[:,result.shape[1]-99:,:]
 
-    print(info_obstacle)
+    sum_of_obstacle_pixels_in_center = np.count_nonzero(center_region > 0)
+    sum_of_obstacle_pixels_in_left = np.count_nonzero(left_region > 0)
+    sum_of_obstacle_pixels_in_right = np.count_nonzero(right_region > 0)
+
+    sum_of_all_pixels_in_center = np.count_nonzero(center_region >= -65536)  # all pixels in center region (all pixels superior to a very negative value)
+    sum_of_all_pixels_in_left = np.count_nonzero(left_region >= -65536)
+    sum_of_all_pixels_in_right = np.count_nonzero(right_region >= -65536)
+
+    proportion_of_obstacle_in_center = float(sum_of_obstacle_pixels_in_center) / float(sum_of_all_pixels_in_center)
+    proportion_of_obstacle_in_left = float(sum_of_obstacle_pixels_in_left) / float(sum_of_all_pixels_in_left)
+    proportion_of_obstacle_in_right = float(sum_of_obstacle_pixels_in_right) / float(sum_of_all_pixels_in_right)
+
+    print(result[100,100, :])
+
+    print(sum_of_obstacle_pixels_in_left, sum_of_obstacle_pixels_in_center, sum_of_obstacle_pixels_in_right)
+    print(sum_of_all_pixels_in_left, sum_of_all_pixels_in_center, sum_of_all_pixels_in_right)
+    print(proportion_of_obstacle_in_left, proportion_of_obstacle_in_center, proportion_of_obstacle_in_right)
+
+    info_obstacle = [0, 0, 0]
+
+    THRESHOLD = 0.8
+
+    if proportion_of_obstacle_in_center > THRESHOLD:
+        info_obstacle[1] = 1
+    if proportion_of_obstacle_in_left > THRESHOLD:
+        info_obstacle[0] = 1
+    if proportion_of_obstacle_in_right > THRESHOLD:
+        info_obstacle[2] = 1
+
+    # print(info_obstacle)
 
     return result
 
