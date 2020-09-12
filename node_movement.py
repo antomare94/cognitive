@@ -197,7 +197,6 @@ def ball_callback(data):
             
 
         # Phase 1
-        print(yaw_robot,yaw_robot_saved)
         if is_in_phase_1:
             print("Looking around for the ball")
             print("Turning left")

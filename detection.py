@@ -73,15 +73,19 @@ def detect_obstacle(cv_image):
       
     # The black region in the mask has the value of 0, 
     # so when multiplied with original image removes all non-blue regions 
-    result = cv2.bitwise_and(cv_image, cv_image, mask = mask) 
+    result = cv2.bitwise_and(cv_image, cv_image, mask = mask)
+
+    # Convert to greyscale
+    result = cv2.cvtColor(result, cv2.COLOR_HSV2RGB)	
+    result = cv2.cvtColor(result, cv2.COLOR_RGB2GRAY)
     
     #cv2.imshow('frame', cv_image) 
     #cv2.imshow('mask', mask) 
     #cv.waitKey(1)
 
-    center_region = result[:, 100:result.shape[1]-100,:]
-    left_region = result[:, :99,:]
-    right_region = result[:,result.shape[1]-99:,:]
+    center_region = result[:, 100:result.shape[1]-100]
+    left_region = result[:, :99]
+    right_region = result[:,result.shape[1]-99:]
 
     sum_of_obstacle_pixels_in_center = np.count_nonzero(center_region > 0)
     sum_of_obstacle_pixels_in_left = np.count_nonzero(left_region > 0)
@@ -95,21 +99,21 @@ def detect_obstacle(cv_image):
     proportion_of_obstacle_in_left = float(sum_of_obstacle_pixels_in_left) / float(sum_of_all_pixels_in_left)
     proportion_of_obstacle_in_right = float(sum_of_obstacle_pixels_in_right) / float(sum_of_all_pixels_in_right)
 
-    print(result[100,100, :])
 
-    print(sum_of_obstacle_pixels_in_left, sum_of_obstacle_pixels_in_center, sum_of_obstacle_pixels_in_right)
-    print(sum_of_all_pixels_in_left, sum_of_all_pixels_in_center, sum_of_all_pixels_in_right)
-    print(proportion_of_obstacle_in_left, proportion_of_obstacle_in_center, proportion_of_obstacle_in_right)
+    # print(sum_of_obstacle_pixels_in_left, sum_of_obstacle_pixels_in_center, sum_of_obstacle_pixels_in_right)
+    # print(sum_of_all_pixels_in_left, sum_of_all_pixels_in_center, sum_of_all_pixels_in_right)
+    # print(proportion_of_obstacle_in_left, proportion_of_obstacle_in_center, proportion_of_obstacle_in_right)
 
     info_obstacle = [0, 0, 0]
 
-    THRESHOLD = 0.8
+    CENTER_THRESHOLD = 0.8
+    SIDE_THRESHOLD = 0.3
 
-    if proportion_of_obstacle_in_center > THRESHOLD:
+    if proportion_of_obstacle_in_center > CENTER_THRESHOLD:
         info_obstacle[1] = 1
-    if proportion_of_obstacle_in_left > THRESHOLD:
+    if proportion_of_obstacle_in_left > SIDE_THRESHOLD:
         info_obstacle[0] = 1
-    if proportion_of_obstacle_in_right > THRESHOLD:
+    if proportion_of_obstacle_in_right > SIDE_THRESHOLD:
         info_obstacle[2] = 1
 
     # print(info_obstacle)
@@ -135,7 +139,7 @@ def callback_with_threading(data):
     print('----------------------------------------')
 
     cv2.imshow("img", image)
-    #cv2.imshow('result', result) 
+    # cv2.imshow('result', result) 
     cv2.waitKey(1)
 
 def callback(data):
