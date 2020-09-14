@@ -273,7 +273,7 @@ def ball_callback(data):
                     twist = perform_movement(0.05,1)
                 
                 go_forward_counter = 100
-                go_forward_counter_when_ball_is_det = 20
+                go_forward_counter_when_ball_is_det = 36
      
     pub.publish(twist)  
 
