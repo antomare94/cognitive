@@ -107,7 +107,7 @@ def detect_obstacle(cv_image):
     info_obstacle = [0, 0, 0]
 
     CENTER_THRESHOLD = 0.8
-    SIDE_THRESHOLD = 0.3
+    SIDE_THRESHOLD = 0.6
 
     if proportion_of_obstacle_in_center > CENTER_THRESHOLD:
         info_obstacle[1] = 1

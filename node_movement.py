@@ -65,7 +65,7 @@ go_forward_counter_when_ball_is_det = 0
 
 def ball_callback(data):
 
-    global no_ball_detected_counter, x_robot, x_ball_old, y_ball_old, close_ball_counter, info_obstacle, phase_counter, is_in_phase_1, save_yaw_robot, x_robot_saved, yaw_robot_saved, go_forward_counter
+    global no_ball_detected_counter, x_robot, x_ball_old, y_ball_old, close_ball_counter, info_obstacle, phase_counter, is_in_phase_1, save_yaw_robot, x_robot_saved, yaw_robot_saved, go_forward_counter, go_forward_counter_when_ball_is_det
 
     if x_robot_saved == 0:
         x_robot_saved = x_robot
