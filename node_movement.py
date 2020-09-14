@@ -61,6 +61,7 @@ yaw_robot_saved = 0
 info_obstacle = [0,0,0]
 
 go_forward_counter = 0
+go_forward_counter_when_ball_is_det = 0
 
 def ball_callback(data):
 
@@ -167,7 +168,7 @@ def ball_callback(data):
 
         print("The ball is detected, but far away")
 
-        if (x_ball < 280 or x_ball > 360) and go_forward_counter == 0:
+        if (x_ball < 280 or x_ball > 360) and go_forward_counter_when_ball_is_det == 0:
             print("Aligning with the ball")
             if(x_ball > 360):
                 print("Turning right")
@@ -180,7 +181,7 @@ def ball_callback(data):
             print("Aligned with the ball")
             print("Going forward")
             twist = perform_movement(0.1,0)
-            go_forward_counter -= 1
+            go_forward_counter_when_ball_is_det -= 1
 
     else:
 
@@ -272,6 +273,7 @@ def ball_callback(data):
                     twist = perform_movement(0.05,1)
                 
                 go_forward_counter = 100
+                go_forward_counter_when_ball_is_det = 20
      
     pub.publish(twist)  
 
