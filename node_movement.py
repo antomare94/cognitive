@@ -167,7 +167,7 @@ def ball_callback(data):
 
         print("The ball is detected, but far away")
 
-        if (x_ball < 280 or x_ball > 360):
+        if (x_ball < 280 or x_ball > 360) and go_forward_counter == 0:
             print("Aligning with the ball")
             if(x_ball > 360):
                 print("Turning right")
@@ -180,6 +180,7 @@ def ball_callback(data):
             print("Aligned with the ball")
             print("Going forward")
             twist = perform_movement(0.1,0)
+            go_forward_counter -= 1
 
     else:
 
