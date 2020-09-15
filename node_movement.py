@@ -127,13 +127,13 @@ def ball_callback(data):
             
             if yaw_robot > target_yaw and yaw_diff > 0.1:
                 print("Turnung right with the ball")
-                twist = perform_movement(0.1,-0.5)
+                twist = perform_movement(0.05,-0.5)
             elif  yaw_robot < target_yaw and yaw_diff > 0.1:
                 print("Turning left with the ball")
-                twist = perform_movement(0.1,0.5)
+                twist = perform_movement(0.05,0.5)
             else:
                 print("Going forward with the ball")
-                twist = perform_movement(0.1,0)
+                twist = perform_movement(0.05,0)
         else:
             if info_obstacle[0] != 0:
                 # ho l'ostacolo al centro e a sinistra ([x,x,0]) quindi giro a destra
