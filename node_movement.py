@@ -104,7 +104,7 @@ def ball_callback(data):
         
         if y_ball > 300:
             ball_is_close = True
-            close_ball_counter = 10  # For 10 frames, even if the ball is not detected, it will be seen as close (to correct false negatives)
+            close_ball_counter = 20  # For 10 frames, even if the ball is not detected, it will be seen as close (to correct false negatives)
         else:
             ball_is_close = False
             close_ball_counter = 0
