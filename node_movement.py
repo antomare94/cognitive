@@ -102,12 +102,12 @@ def ball_callback(data):
         
         if y_ball > 300:
             ball_is_close = True
-            close_ball_counter = 3
+            close_ball_counter = 10  # For 10 frames, even if the ball is not detected, it will be seen as close (to correct false negatives)
         else:
             ball_is_close = False
             close_ball_counter = 0
 
-    # Override the ball_is_close boolean if it was detected as close less than 3 frames ago
+    # Override the ball_is_close boolean if it was detected as close a few frames ago
     if close_ball_counter > 0 and not ball_is_close:
         ball_is_close = True
         x_ball = x_ball_old
@@ -139,47 +139,55 @@ def ball_callback(data):
                 # ho l'ostacolo al centro e a sinistra ([x,x,0]) quindi giro a destra
                 print("Obstacle forward, but not on the right")
                 print("Turning right with the ball")
-                twist = perform_movement(0.1,-0.5)
+                twist = perform_movement(0.05,-0.5)
 
             elif info_obstacle[2] != 0: 
                 # ho l'ostacolo al centro e a destra ([0,x,x]) quindi giro a sinistra
                 print("Obstacle forward, but not on the left")
                 print("Turning left with the ball")
-                twist = perform_movement(0.1,0.5)
+                twist = perform_movement(0.05,0.5)
             else:
                 # ho l'ostacolo solo a centro o in tutte e tre
                 print("Obstacle in all directions")
                 if yaw_robot > target_yaw and yaw_diff > 0.1:
                     print("Aligning with the goal")
                     print("Trying to go around on the right")
-                    twist = perform_movement(0.1,-0.5)
+                    twist = perform_movement(0.05,-0.5)
                 elif  yaw_robot < target_yaw and yaw_diff > 0.1:
                     print("Aligning with the goal")
                     print("Trying to go around on the left")
-                    twist = perform_movement(0.1,0.5)
+                    twist = perform_movement(0.05,0.5)
                 else:
                     # default gira a sinistra se robot e gia allineato e ha l'ostacolo al centro
                     print("Aligned with the goal")
                     print("Trying to go around on the left")
-                    twist = perform_movement(0.1,0.5)
+                    twist = perform_movement(0.05,0.5)
        
 
     elif no_ball_detected_counter == 0 and info_obstacle[0] == 0 and info_obstacle[1] == 0 and info_obstacle[2] == 0:  # Movement when the ball is far away, but detected
 
         print("The ball is detected, but far away")
 
-        if (x_ball < 280 or x_ball > 360) and go_forward_counter_when_ball_is_det == 0:
-            print("Aligning with the ball")
-            if(x_ball > 360):
-                print("Turning right")
-                twist = perform_movement(0.0,-1)
+        if go_forward_counter_when_ball_is_det <= 0:
+
+            if (x_ball < 280 or x_ball > 360):
+                print("Aligning with the ball")
+                if(x_ball > 360):
+                    print("Turning right")
+                    twist = perform_movement(0.0,-1)
+                else:
+                    print("Turning left")
+                    twist = perform_movement(0.0,1)
+            
             else:
-                print("Turning left")
-                twist = perform_movement(0.0,1)
+                print("Aligned with the ball")
+                print("Moving forward")
+                twist = perform_movement(0.1,0)
         
         else:
-            print("Aligned with the ball")
-            print("Going forward")
+
+            print("Ignoring the ball")
+            print("Moving forward")
             twist = perform_movement(0.1,0)
             go_forward_counter_when_ball_is_det -= 1
 
@@ -273,7 +281,7 @@ def ball_callback(data):
                     twist = perform_movement(0.05,1)
                 
                 go_forward_counter = 100
-                go_forward_counter_when_ball_is_det = 36
+                go_forward_counter_when_ball_is_det = 50
      
     pub.publish(twist)  
 
