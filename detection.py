@@ -177,7 +177,7 @@ def callback(data):
                 x2 = int(detection[5] * cols)
                 y2 = int(detection[6] * rows)
                 if detection[1] == 1.0:
-                    det = True
+                    det = True  # To deactiate the tracker, just set this to False...
                     x1_ball, y1_ball, x2_ball, y2_ball = x1, y1, x2, y2
                     nn_ball_detected = True
         
