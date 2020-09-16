@@ -95,7 +95,7 @@ def ball_callback(data):
         x_ball_old = x_ball
         y_ball_old = y_ball
         
-        if y_ball > 300:  # Ball deteted and close
+        if y_ball > 250:  # Ball deteted and close
             ball_is_close = True
             close_ball_override_time = current_time + 1  # For 1 second, even if the ball is not detected, it will be seen as close (to correct false negatives)
         else:
@@ -123,10 +123,10 @@ def ball_callback(data):
 
                 if yaw_robot > target_yaw and yaw_diff > 0.1:
                     print("Turning right with the ball")
-                    twist = perform_movement(0.1,-0.5)
+                    twist = perform_movement(0.1,-1)
                 elif  yaw_robot < target_yaw and yaw_diff > 0.1:
                     print("Turning left with the ball")
-                    twist = perform_movement(0.1,0.5)
+                    twist = perform_movement(0.1,1)
                 else:
                     print("Going forward with the ball")
                     twist = perform_movement(0.1,0)            
@@ -136,33 +136,33 @@ def ball_callback(data):
                     # ho l'ostacolo al centro e a sinistra ([x,x,0]) quindi giro a destra
                     print("Obstacle forward, but not on the right")
                     print("Turning right with the ball")
-                    twist = perform_movement(0.05,-0.5)
+                    twist = perform_movement(0.05,-1)
 
                 elif info_obstacle[2] != 0: 
                     # ho l'ostacolo al centro e a destra ([0,x,x]) quindi giro a sinistra
                     print("Obstacle forward, but not on the left")
                     print("Turning left with the ball")
-                    twist = perform_movement(0.05,0.5)
+                    twist = perform_movement(0.05,1)
                 else:
                     # ho l'ostacolo solo a centro o in tutte e tre
                     print("Obstacle in all directions")
                     if yaw_robot > target_yaw and yaw_diff > 0.1:
                         print("Aligning with the goal")
                         print("Trying to go around on the right")
-                        twist = perform_movement(0.05,-0.5)
+                        twist = perform_movement(0.05,-1)
                     elif  yaw_robot < target_yaw and yaw_diff > 0.1:
                         print("Aligning with the goal")
                         print("Trying to go around on the left")
-                        twist = perform_movement(0.05,0.5)
+                        twist = perform_movement(0.05,1)
                     else:
                         # default gira a sinistra se robot e gia allineato e ha l'ostacolo al centro
                         print("Aligned with the goal")
                         print("Trying to go around on the left")
-                        twist = perform_movement(0.05,0.5)
+                        twist = perform_movement(0.05,1)
         
         else:
             print("Repositioning")  # Going backwards a bit to reposition the vehicle
-            twist = perform_movement(-0.1, 0)
+            twist = perform_movement(-0.2, 0)
             if reversing_time <= current_time:
                 reversing_time = current_time + 1
 
@@ -176,10 +176,10 @@ def ball_callback(data):
                 print("Aligning with the ball")
                 if(x_ball > 360):
                     print("Turning right")
-                    twist = perform_movement(0.0,-1)
+                    twist = perform_movement(0.1,-1)
                 else:
                     print("Turning left")
-                    twist = perform_movement(0.0,1)
+                    twist = perform_movement(0.1,1)
             
             else:
                 print("Aligned with the ball")
