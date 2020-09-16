@@ -95,7 +95,7 @@ def ball_callback(data):
         x_ball_old = x_ball
         y_ball_old = y_ball
         
-        if y_ball > 250:  # Ball deteted and close
+        if y_ball > 300:  # Ball deteted and close
             ball_is_close = True
             close_ball_override_time = current_time + 1  # For 1 second, even if the ball is not detected, it will be seen as close (to correct false negatives)
         else:
@@ -123,10 +123,10 @@ def ball_callback(data):
 
                 if yaw_robot > target_yaw and yaw_diff > 0.1:
                     print("Turning right with the ball")
-                    twist = perform_movement(0.1,-1)
+                    twist = perform_movement(0.1,-0.5)
                 elif  yaw_robot < target_yaw and yaw_diff > 0.1:
                     print("Turning left with the ball")
-                    twist = perform_movement(0.1,1)
+                    twist = perform_movement(0.1,0.5)
                 else:
                     print("Going forward with the ball")
                     twist = perform_movement(0.1,0)            
