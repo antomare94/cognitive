@@ -6,6 +6,7 @@ from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
 import math
 import numpy as np
+import time
 
 def makeSimpleProfile(output, input, slop):
     if input > output:
@@ -40,7 +41,7 @@ def perform_movement(target_linear_vel = 0.0,target_angular_vel = 0.0):
     return twist
 
 
-no_ball_detected_counter = 0  # Number of frames since the ball was last detected
+no_ball_detected = False
 x_robot = 0
 y_robot = 0
 yaw_robot = 0
@@ -49,9 +50,9 @@ target_yaw = 0
 x_ball_old = 0
 y_ball_old = 0
 
-close_ball_counter = 0  # If close_ball_counter > 0, then the ball_is_close was true less than 3 frames ago.
+close_ball_override_time = 0  # While current_time < close_ball_override_time, the ball is considered close regardless of detection
 
-phase_counter = 0  # Used if the ball is not detected
+turning_minimal_delay_time = 0  # Used when the robot is turning at 360 deg. to make sure it does a full turn before going forth
 is_in_phase_1 = True
 save_yaw_robot = True
 
@@ -60,14 +61,16 @@ yaw_robot_saved = 0
 
 info_obstacle = [0,0,0]
 
-go_forward_counter = 0
-go_forward_counter_when_ball_is_det = 0
+ignoring_the_goal_time = 0
+ignoring_the_ball_time = 0
 
-go_back_counter = 0
+reversing_time = 0
 
 def ball_callback(data):
 
-    global no_ball_detected_counter, x_robot, x_ball_old, y_ball_old, close_ball_counter, info_obstacle, phase_counter, is_in_phase_1, save_yaw_robot, x_robot_saved, yaw_robot_saved, go_forward_counter, go_forward_counter_when_ball_is_det, go_back_counter
+    global no_ball_detected, x_robot, x_ball_old, y_ball_old, close_ball_override_time, info_obstacle, turning_minimal_delay_time, is_in_phase_1, save_yaw_robot, x_robot_saved, yaw_robot_saved, ignoring_the_goal_time, ignoring_the_ball_time, reversing_time
+
+    current_time = time.time()
 
     if x_robot_saved == 0:
         x_robot_saved = x_robot
@@ -79,42 +82,31 @@ def ball_callback(data):
 
     x_ball,y_ball = data.data
 
-    # print(x_ball)
-    # print(y_ball)
-
-    # # Constants
-    # BALL_CENTERED = 0
-    # BALL_IN_LEFT_CORNER = 1
-    # BALL_IN_RIGHT_CORNER = 2
-    # WINDOW_WIDTH = 640
-    # MARGIN = 50
-
     if(x_ball == 0 and y_ball == 0):
         
         # No ball detection
         ball_is_close = False
-        no_ball_detected_counter += 1
+        no_ball_detected = True
 
-    else:
+    else:  # Ball detected! :)
 
-        no_ball_detected_counter = 0
+        no_ball_detected = False
 
         x_ball_old = x_ball
         y_ball_old = y_ball
         
-        if y_ball > 300:
+        if y_ball > 300:  # Ball deteted and close
             ball_is_close = True
-            close_ball_counter = 20  # For 10 frames, even if the ball is not detected, it will be seen as close (to correct false negatives)
+            close_ball_override_time = current_time + 1  # For 1 second, even if the ball is not detected, it will be seen as close (to correct false negatives)
         else:
-            ball_is_close = False
-            close_ball_counter = 0
+            ball_is_close = False  # Ball detected, but far away (y < 300)
+            close_ball_override_time = 0
 
-    # Override the ball_is_close boolean if it was detected as close a few frames ago
-    if close_ball_counter > 0 and not ball_is_close:
+    # Override the ball_is_close boolean if it was detected as close less than a second ago
+    if close_ball_override_time > current_time and not ball_is_close:
         ball_is_close = True
         x_ball = x_ball_old
         y_ball = y_ball_old
-        close_ball_counter -= 1
 
     print("-----------------------------------")
 
@@ -122,7 +114,7 @@ def ball_callback(data):
 
         print("The ball is close")
 
-        if x_ball > 180 and x_ball < 460 and go_back_counter <= 0:
+        if x_ball > 100 and x_ball < 540 and reversing_time <= current_time:
 
             yaw_diff = abs(yaw_robot-target_yaw)
             if info_obstacle[1] == 0:
@@ -169,17 +161,16 @@ def ball_callback(data):
                         twist = perform_movement(0.05,0.5)
         
         else:
-            print("Repositioning")
+            print("Repositioning")  # Going backwards a bit to reposition the vehicle
             twist = perform_movement(-0.1, 0)
-            if go_back_counter <= 0:
-                go_back_counter = 10
-            go_back_counter -= 1
+            if reversing_time <= current_time:
+                reversing_time = current_time + 1
 
-    elif no_ball_detected_counter == 0 and info_obstacle[0] == 0 and info_obstacle[1] == 0 and info_obstacle[2] == 0:  # Movement when the ball is far away, but detected
+    elif not no_ball_detected and info_obstacle[0] == 0 and info_obstacle[1] == 0 and info_obstacle[2] == 0:  # Movement when the ball is far away, but detected
 
         print("The ball is detected, but far away")
 
-        if go_forward_counter_when_ball_is_det <= 0:
+        if ignoring_the_ball_time <= current_time:
 
             if (x_ball < 280 or x_ball > 360):
                 print("Aligning with the ball")
@@ -200,7 +191,6 @@ def ball_callback(data):
             print("Ignoring the ball")
             print("Moving forward")
             twist = perform_movement(0.1,0)
-            go_forward_counter_when_ball_is_det -= 1
 
     else:
 
@@ -209,9 +199,7 @@ def ball_callback(data):
         # Phase 1: Turn 360 deg. to look around for the ball
         # Phase 2: Move towards the goal
 
-        #FRAMES_BETWEEN_PHASES = 500
-
-        # To switch between phases
+        # To switch between phases: every ~ 1.5 units along the x axis
         if x_robot_saved + 1.4 <= x_robot <= x_robot_saved + 1.6:
             is_in_phase_1 = True  # Toggle the boolean
             x_robot_saved = x_robot
@@ -224,15 +212,13 @@ def ball_callback(data):
             if save_yaw_robot:
                 yaw_robot_saved = yaw_robot
                 save_yaw_robot = False
+                turning_minimal_delay_time = current_time + 2
             twist = perform_movement(0.0,1)
-
-            phase_counter+=1
         
-            if abs(yaw_robot - yaw_robot_saved) <= 0.1 and phase_counter>50:
+            if abs(yaw_robot - yaw_robot_saved) <= 0.1 and current_time >= turning_minimal_delay_time:
                 is_in_phase_1 = False
                 save_yaw_robot = True
-                twist = perform_movement(0.0,0)  # no movement? 
-                phase_counter = 0
+                twist = perform_movement(0.0,0)  # no movement?
 
         # Phase 2
         else:
@@ -244,11 +230,10 @@ def ball_callback(data):
             if info_obstacle[1] == 0 and info_obstacle[0] == 0 and info_obstacle[2] == 0:
                 print("No obstacle")
 
-                if go_forward_counter != 0:
+                if current_time < ignoring_the_goal_time:
                     print("Ignoring the goal")
                     print("Moving forward")
                     twist = perform_movement(0.1,0)
-                    go_forward_counter -= 1
 
                 else:
                     if yaw_robot > target_yaw and yaw_diff > 0.1:
@@ -291,8 +276,8 @@ def ball_callback(data):
                     print("Trying to bypass to the left")
                     twist = perform_movement(0.05,1)
                 
-                go_forward_counter = 100
-                go_forward_counter_when_ball_is_det = 50
+                ignoring_the_goal_time = current_time + 6
+                ignoring_the_ball_time = current_time + 3
      
     pub.publish(twist)  
 
