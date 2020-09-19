@@ -9,6 +9,7 @@ import numpy as np
 from datetime import datetime
 from imutils.video import FPS
 import threading
+import time
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 frozen_inference_graph_path = os.path.join(script_path, 'output_inference_graph_v1/frozen_inference_graph.pb')
@@ -49,6 +50,9 @@ y1_ball = 0
 x2_ball = 0
 y2_ball = 0
 tracker = None
+
+start = time.time()
+callback_counter = 0
 
 arr_cords_ball = [0,0]
 info_obstacle = [0,0,0]
@@ -121,17 +125,21 @@ def detect_obstacle(cv_image):
     return result
 
 def callback_with_threading(data):
-    global semaphore, image, arr_cords_ball
+    global semaphore, image, arr_cords_ball, callback_counter
 
     if semaphore:
         semaphore = False
         thread = threading.Thread(target=callback, args=(data,))
+        callback_counter += 1
         thread.start()
     else:
         print('PREVIOUS PROCESSING STEP UNFINISHED - NEW INPUT IGNORED')
 
     #print('[INFO] Ball detected position: ' + str(arr_cords_ball))
     #print('[NOTE] If equal to [0, 0] - no ball is detected')
+    end = time.time()
+    print("Elapsed time:", end - start)
+    print("Images analysed:", str(callback_counter))
     pub_ball.publish(Int16MultiArray(data=arr_cords_ball))
     pub_obstacle.publish(Int32MultiArray(data=info_obstacle))
 
