@@ -1,0 +1,4 @@
+<launch>
+    <node name="node_detection" pkg="test-pkg" type="detection.py" output="screen"></node>
+    <node name="node_movement" pkg="test-pkg" type="node_movement.py" output="screen"></node>
+</launch>
